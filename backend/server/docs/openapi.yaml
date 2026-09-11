@@ -43,6 +43,8 @@ tags:
     description: Unauthenticated public site-content reads (branding, navigation, pages, docs)
   - name: admin-content
     description: Administrator site-content CRUD
+  - name: analytics
+    description: Public page-view ingest and administrator analytics overview
 paths:
   /healthz:
     get:
@@ -1820,6 +1822,45 @@ paths:
           $ref: '#/components/responses/RateLimited'
         '503':
           $ref: '#/components/responses/DependencyUnavailable'
+  /api/v1/public/page-view:
+    post:
+      tags: [analytics]
+      summary: Report one public page view
+      description: |
+        Fire-and-forget page-view ingest. `path` must start with `/` and be at
+        most 512 characters; an invalid path is silently dropped and still
+        returns 200. `source` is resolved from `referrer`: empty or non-http(s)
+        becomes `direct`, otherwise the referrer host (subdomains preserved, no
+        domain classification). No authentication and no audit. A loose per-IP
+        hourly limit returns 429; when the limiter's Redis is unavailable the
+        report is accepted (fail-open). The response is never cached.
+      operationId: reportPageView
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path: { type: string, maxLength: 512, description: "Site path starting with /" }
+                referrer: { type: string, description: "Referrer URL; empty or non-http(s) means direct" }
+                locale: { type: string, maxLength: 35 }
+      responses:
+        '200':
+          description: Report accepted (valid or silently dropped)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
   /media/{filename}:
     get:
       tags: [public-content]
@@ -2904,6 +2945,43 @@ paths:
           $ref: '#/components/responses/NotFound'
         '503':
           $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/analytics/overview:
+    get:
+      tags: [analytics]
+      summary: Aggregated page views and traffic sources
+      description: |
+        Requires `admin.analytics.read`. `range` defaults to `today` (the
+        server's local day); `7d` and `30d` are rolling windows ending now that
+        include the current day. Sources are aggregated by resolved source
+        (`direct` or referrer host), ordered by count descending, and capped at
+        50. The response is never cached.
+      operationId: getAnalyticsOverview
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - name: range
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [today, 7d, 30d]
+            default: today
+      responses:
+        '200':
+          description: Analytics overview for the requested range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsOverviewSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
 components:
   securitySchemes:
     bearerAuth:
@@ -4438,3 +4516,29 @@ components:
                 total: { type: integer }
                 page: { type: integer }
                 page_size: { type: integer }
+    AnalyticsSource:
+      type: object
+      required: [source, count]
+      properties:
+        source: { type: string }
+        count: { type: integer, minimum: 0 }
+    AnalyticsOverview:
+      type: object
+      required: [range, pv, source_count, sources]
+      properties:
+        range: { type: string, enum: [today, 7d, 30d] }
+        pv: { type: integer, minimum: 0 }
+        source_count: { type: integer, minimum: 0 }
+        sources:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/AnalyticsSource'
+    AnalyticsOverviewSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/AnalyticsOverview'

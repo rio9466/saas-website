@@ -40,6 +40,7 @@ import (
 	"github.com/rio9466/easy-admin/server/internal/repository/logdb"
 	"github.com/rio9466/easy-admin/server/internal/repository/primary"
 	adminsvc "github.com/rio9466/easy-admin/server/internal/service/adminauth"
+	analyticssvc "github.com/rio9466/easy-admin/server/internal/service/analyticssvc"
 	contentsvc "github.com/rio9466/easy-admin/server/internal/service/contentsvc"
 	usersvc "github.com/rio9466/easy-admin/server/internal/service/usersvc"
 	transporthttp "github.com/rio9466/easy-admin/server/internal/transport/http"
@@ -242,6 +243,14 @@ func run(configPath string) error {
 	}
 	contentAdapter := &handler.ContentServiceAdapter{Svc: contentSvc}
 
+	// Page-view analytics: public ingest and the administrator overview.
+	pageViewRepo := primary.NewPageViewRepository(primaryDB.GORM())
+	analyticsSvc, err := analyticssvc.New(pageViewRepo, adminRepo, limiter, logger)
+	if err != nil {
+		return errors.New("configure analytics service failed")
+	}
+	analyticsAdapter := &handler.AnalyticsServiceAdapter{Svc: analyticsSvc}
+
 	ready := handler.MultiReady(logger,
 		handler.NamedReadyCheck{Name: "primary_postgres", Checker: primaryDB, Timeout: cfg.Database.Primary.PingTimeout},
 		handler.NamedReadyCheck{Name: "log_postgres", Checker: logDB, Timeout: cfg.Database.Log.PingTimeout},
@@ -255,6 +264,7 @@ func run(configPath string) error {
 		UserClient:   userAdapter,
 		UserAdmin:    userAdapter,
 		Content:      contentAdapter,
+		Analytics:    analyticsAdapter,
 		Tokens:       tokens,
 		Sessions:     sessions,
 		UserTokens:   userTokens,
