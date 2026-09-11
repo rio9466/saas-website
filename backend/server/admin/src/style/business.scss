@@ -1,0 +1,56 @@
+/**
+ * 业务页统一面板样式（浅色/深色主题自适应）。
+ *
+ * 背景使用 Element Plus 主题变量（浅色 #fff，深色 #141414），
+ * 文字使用 --el-text-color-*，边框使用 --el-border-color-*，
+ * 避免硬编码白色背景与固定灰色正文破坏深色模式。
+ */
+
+.panel-container {
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 4px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+
+.panel-body {
+  padding: 16px;
+}
+
+.table-body {
+  min-height: 300px;
+}
+
+/* 次要文字：替代 text-gray-* 的硬编码浅色 */
+.text-secondary {
+  color: var(--el-text-color-secondary);
+}
+
+.text-tertiary {
+  color: var(--el-text-color-secondary);
+}
+
+.details-pre {
+  max-height: 288px;
+  padding: 12px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--el-text-color-regular);
+  background: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 4px;
+}

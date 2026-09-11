@@ -1,0 +1,83 @@
+# Example configuration for the easy-admin Go server.
+# Copy to configs/config.local.toml and adjust for local development.
+# Precedence: TOML file first, then named environment overrides.
+#
+# Local Docker middleware defaults (see docs/data-stores.md):
+#   primary PostgreSQL 127.0.0.1:55432
+#   log PostgreSQL     127.0.0.1:55433
+#   Redis              127.0.0.1:56379
+
+[server]
+# Listen address for the HTTP server.
+addr = ":8080"
+# Timeouts for the net/http.Server and process lifecycle.
+read_header_timeout = "5s"
+read_timeout = "15s"
+write_timeout = "15s"
+idle_timeout = "60s"
+shutdown_timeout = "10s"
+
+[database.primary]
+# Product source-of-truth PostgreSQL. Never commit real secrets.
+# Override with PRIMARY_POSTGRES_DSN.
+dsn = "postgres://easy_admin:change-me@127.0.0.1:55432/easy_admin?sslmode=disable"
+max_open_conns = 10
+max_idle_conns = 5
+conn_max_lifetime = "30m"
+conn_max_idle_time = "5m"
+startup_timeout = "5s"
+ping_timeout = "2s"
+
+[database.log]
+# Durable audit/operation-log PostgreSQL only. Not used for slog runtime output.
+# Override with LOG_POSTGRES_DSN.
+dsn = "postgres://easy_admin_logs:change-me@127.0.0.1:55433/easy_admin_logs?sslmode=disable"
+max_open_conns = 5
+max_idle_conns = 2
+conn_max_lifetime = "30m"
+conn_max_idle_time = "5m"
+startup_timeout = "5s"
+ping_timeout = "2s"
+
+[redis]
+# Approved ephemeral/shared state. Admin sessions use easy-admin:admin-session:<sid>.
+# Overrides: REDIS_ADDR, REDIS_PASSWORD, REDIS_DB.
+addr = "127.0.0.1:56379"
+password = ""
+db = 0
+pool_size = 10
+dial_timeout = "3s"
+read_timeout = "2s"
+write_timeout = "2s"
+startup_timeout = "3s"
+ping_timeout = "1s"
+
+[auth]
+# development | production. Production rejects Secure=false cookies.
+environment = "development"
+# Override with JWT_SECRET. Must be at least 32 characters. Never commit real secrets.
+jwt_secret = "change-me-to-a-long-random-secret-at-least-32"
+jwt_issuer = "easy-admin"
+jwt_audience = "easy-admin-admin"
+refresh_cookie_name = "ea_admin_refresh"
+refresh_cookie_path = "/api/v1/admin/auth"
+# Local HTTP may set false only when environment = development.
+refresh_cookie_secure = false
+trusted_origins = ["http://127.0.0.1:8848", "http://localhost:8848", "http://127.0.0.1:3000", "http://localhost:3000"]
+bcrypt_cost = 12
+# Business-user auth is fully separate: distinct JWT audience and refresh cookie.
+user_jwt_audience = "easy-admin-user"
+user_refresh_cookie_name = "ea_user_refresh"
+user_refresh_cookie_path = "/api/v1/auth"
+user_refresh_cookie_secure = false
+
+[user]
+# SMTP master key: exactly 32 bytes; decrypts stored SMTP passwords at the
+# application boundary. Override with SMTP_MASTER_KEY. Never commit real secrets.
+smtp_master_key = ""
+# Bounded TTL for one-time email verification tokens (Redis hashed storage).
+verification_token_ttl = "24h"
+
+[log]
+# Runtime diagnostics via slog to stdout. debug | info | warn | error
+level = "info"
