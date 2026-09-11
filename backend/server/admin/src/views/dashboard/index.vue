@@ -17,7 +17,7 @@ defineOptions({
 
 /** 访问统计（overview）受 admin.analytics.read 约束；注册/未读各按自身权限展示 */
 const canReadAnalytics = computed(() => hasPerms("admin.analytics.read"));
-const canReadUsers = computed(() => hasPerms("admin.user.read"));
+const canReadUsers = computed(() => hasPerms("admin.customer.read"));
 const canReadContact = computed(() => hasPerms("admin.contact.read"));
 
 const RANGES: AnalyticsRange[] = ["today", "7d", "30d"];
