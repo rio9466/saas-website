@@ -40,6 +40,7 @@ import (
 	"github.com/rio9466/easy-admin/server/internal/repository/logdb"
 	"github.com/rio9466/easy-admin/server/internal/repository/primary"
 	adminsvc "github.com/rio9466/easy-admin/server/internal/service/adminauth"
+	contentsvc "github.com/rio9466/easy-admin/server/internal/service/contentsvc"
 	usersvc "github.com/rio9466/easy-admin/server/internal/service/usersvc"
 	transporthttp "github.com/rio9466/easy-admin/server/internal/transport/http"
 	"github.com/rio9466/easy-admin/server/internal/transport/http/handler"
@@ -217,6 +218,14 @@ func run(configPath string) error {
 	}
 	userAdapter := &handler.UserServiceAdapter{Svc: userSvc}
 
+	// Site content platform: public content reads plus administrator content CRUD.
+	contentRepo := primary.NewContentRepository(primaryDB.GORM())
+	contentSvc, err := contentsvc.New(contentRepo, adminRepo, auditRepo, logger)
+	if err != nil {
+		return errors.New("configure content service failed")
+	}
+	contentAdapter := &handler.ContentServiceAdapter{Svc: contentSvc}
+
 	ready := handler.MultiReady(logger,
 		handler.NamedReadyCheck{Name: "primary_postgres", Checker: primaryDB, Timeout: cfg.Database.Primary.PingTimeout},
 		handler.NamedReadyCheck{Name: "log_postgres", Checker: logDB, Timeout: cfg.Database.Log.PingTimeout},
@@ -229,6 +238,7 @@ func run(configPath string) error {
 		AdminAuth:    adapter,
 		UserClient:   userAdapter,
 		UserAdmin:    userAdapter,
+		Content:      contentAdapter,
 		Tokens:       tokens,
 		Sessions:     sessions,
 		UserTokens:   userTokens,

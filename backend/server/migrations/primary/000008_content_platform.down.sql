@@ -1,0 +1,21 @@
+DROP TABLE IF EXISTS doc_article_translations;
+DROP TABLE IF EXISTS doc_articles;
+DROP TABLE IF EXISTS doc_category_translations;
+DROP TABLE IF EXISTS doc_categories;
+DROP TABLE IF EXISTS page_translations;
+DROP TABLE IF EXISTS pages;
+DROP TABLE IF EXISTS pricing_plan_features;
+DROP TABLE IF EXISTS pricing_plan_translations;
+DROP TABLE IF EXISTS pricing_plans;
+DROP TABLE IF EXISTS feature_translations;
+DROP TABLE IF EXISTS features;
+DROP TABLE IF EXISTS home_section_translations;
+DROP TABLE IF EXISTS home_sections;
+DROP TABLE IF EXISTS navigation_item_translations;
+DROP TABLE IF EXISTS navigation_items;
+DROP TABLE IF EXISTS site_setting_translations;
+DROP TABLE IF EXISTS site_settings;
+DROP INDEX IF EXISTS supported_locales_single_default;
+DROP TABLE IF EXISTS supported_locales;
+
+DELETE FROM schema_migrations WHERE version = '000008_content_platform';

@@ -17,6 +17,13 @@ import (
 	"github.com/rio9466/easy-admin/server/internal/transport/http/response"
 )
 
+// stubContent satisfies handler.ContentService for router parity tests. The
+// embedded interface is nil because route registration never invokes handlers.
+type stubContent struct {
+	handler.ContentService
+}
+
+// stubTokens implements middleware.TokenParser for authz routing tests.
 type stubTokens struct {
 	claims *platformauth.Claims
 	err    error
