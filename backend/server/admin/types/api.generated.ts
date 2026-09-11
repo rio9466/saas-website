@@ -737,6 +737,529 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/navigation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public navigation tree */
+        get: operations["getPublicNavigation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public home sections */
+        get: operations["getPublicHome"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public feature list */
+        get: operations["getPublicFeatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/pricing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public pricing plans */
+        get: operations["getPublicPricing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public page list */
+        get: operations["getPublicPages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/pages/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public page detail */
+        get: operations["getPublicPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/docs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public documentation tree */
+        get: operations["getPublicDocs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/docs/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public documentation article */
+        get: operations["getPublicDoc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a public contact-form message
+         * @description Validates name/email/message/consent, applies a per-IP fixed-window
+         *     rate limit, and persists the submission. The hidden `website` honeypot
+         *     yields a silent 201 without persisting. Redis failures fail closed.
+         */
+        post: operations["submitPublicContact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Serve a stored media object */
+        get: operations["getMediaFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/site-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read site settings (all languages) */
+        get: operations["getSiteSettings"];
+        /** Replace site settings (optimistic lock) */
+        put: operations["updateSiteSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/navigation-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List navigation items */
+        get: operations["listNavigationItems"];
+        put?: never;
+        /** Create navigation item */
+        post: operations["createNavigationItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/navigation-items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete navigation item */
+        delete: operations["deleteNavigationItem"];
+        options?: never;
+        head?: never;
+        /** Update navigation item */
+        patch: operations["updateNavigationItem"];
+        trace?: never;
+    };
+    "/api/v1/admin/home-sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List home sections */
+        get: operations["listHomeSections"];
+        put?: never;
+        /** Create home section */
+        post: operations["createHomeSection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/home-sections/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete home section */
+        delete: operations["deleteHomeSection"];
+        options?: never;
+        head?: never;
+        /** Update home section */
+        patch: operations["updateHomeSection"];
+        trace?: never;
+    };
+    "/api/v1/admin/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List features */
+        get: operations["listFeatures"];
+        put?: never;
+        /** Create feature */
+        post: operations["createFeature"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/features/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete feature */
+        delete: operations["deleteFeature"];
+        options?: never;
+        head?: never;
+        /** Update feature */
+        patch: operations["updateFeature"];
+        trace?: never;
+    };
+    "/api/v1/admin/pricing-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List pricing plans */
+        get: operations["listPricingPlans"];
+        put?: never;
+        /** Create pricing plan */
+        post: operations["createPricingPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/pricing-plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete pricing plan */
+        delete: operations["deletePricingPlan"];
+        options?: never;
+        head?: never;
+        /** Update pricing plan */
+        patch: operations["updatePricingPlan"];
+        trace?: never;
+    };
+    "/api/v1/admin/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List pages */
+        get: operations["listPages"];
+        put?: never;
+        /** Create page */
+        post: operations["createPage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/pages/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read page (all languages) */
+        get: operations["getPage"];
+        put?: never;
+        post?: never;
+        /** Delete page */
+        delete: operations["deletePage"];
+        options?: never;
+        head?: never;
+        /** Update page */
+        patch: operations["updatePage"];
+        trace?: never;
+    };
+    "/api/v1/admin/doc-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List documentation categories */
+        get: operations["listDocCategories"];
+        put?: never;
+        /** Create documentation category */
+        post: operations["createDocCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/doc-categories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete documentation category */
+        delete: operations["deleteDocCategory"];
+        options?: never;
+        head?: never;
+        /** Update documentation category */
+        patch: operations["updateDocCategory"];
+        trace?: never;
+    };
+    "/api/v1/admin/doc-articles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List documentation articles */
+        get: operations["listDocArticles"];
+        put?: never;
+        /** Create documentation article */
+        post: operations["createDocArticle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/doc-articles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read documentation article (all languages) */
+        get: operations["getDocArticle"];
+        put?: never;
+        post?: never;
+        /** Delete documentation article */
+        delete: operations["deleteDocArticle"];
+        options?: never;
+        head?: never;
+        /** Update documentation article */
+        patch: operations["updateDocArticle"];
+        trace?: never;
+    };
+    "/api/v1/admin/contact-submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List contact submissions */
+        get: operations["listContactSubmissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/contact-submissions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one contact submission */
+        get: operations["getContactSubmission"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a contact submission status
+         * @description Only the status field is accepted and changed.
+         */
+        patch: operations["updateContactSubmissionStatus"];
+        trace?: never;
+    };
+    "/api/v1/admin/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List media assets */
+        get: operations["listMedia"];
+        put?: never;
+        /**
+         * Upload a media asset
+         * @description multipart/form-data field `file`; png/jpeg/webp/svg/gif up to 5MB.
+         */
+        post: operations["uploadMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/media/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a media asset */
+        delete: operations["deleteMedia"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -966,6 +1489,22 @@ export interface components {
             email_login_enabled: boolean;
             email_verification_required: boolean;
             default_avatar_url: string;
+            site_name: string;
+            logo_url: string;
+            logo_dark_url: string;
+            favicon_url: string;
+            tagline: string;
+            footer_text: string;
+            icp_record: string;
+            contact_email: string;
+            contact_phone: string;
+            contact_address: string;
+            social_links: components["schemas"]["SocialLink"][];
+            seo_default_title: string;
+            seo_default_description: string;
+            seo_default_og_image_url: string;
+            default_locale: string;
+            locales: components["schemas"]["LocaleOption"][];
         };
         PublicSettingsSuccess: components["schemas"]["Envelope"] & {
             /** @enum {unknown} */
@@ -1180,6 +1719,615 @@ export interface components {
             message?: "settings conflict";
             data?: Record<string, never>;
         };
+        SocialLink: {
+            platform: string;
+            url: string;
+        };
+        LocaleOption: {
+            code: string;
+            label: string;
+        };
+        PublicNavigationItem: {
+            id: string;
+            label: string;
+            url: string;
+            /** @enum {string} */
+            target: "_self" | "_blank";
+            sort_order: number;
+            children: components["schemas"]["PublicNavigationItem"][];
+        };
+        PublicNavigation: {
+            locale: string;
+            items: components["schemas"]["PublicNavigationItem"][];
+        };
+        PublicNavigationSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["PublicNavigation"];
+        };
+        PublicHomeSection: {
+            id: string;
+            /** @description Known types: hero, features, screenshot, stats, cta; unknown types must be ignored by the client. */
+            type: string;
+            sort_order: number;
+            data: {
+                [key: string]: unknown;
+            };
+        };
+        PublicHome: {
+            locale: string;
+            sections: components["schemas"]["PublicHomeSection"][];
+        };
+        PublicHomeSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["PublicHome"];
+        };
+        PublicFeature: {
+            id: string;
+            icon: string;
+            title: string;
+            summary: string;
+            /** @description Server-sanitized Markdown */
+            body_md: string;
+            image_url: string;
+            sort_order: number;
+        };
+        PublicFeatures: {
+            locale: string;
+            items: components["schemas"]["PublicFeature"][];
+        };
+        PublicFeaturesSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["PublicFeatures"];
+        };
+        PublicPlan: {
+            id: string;
+            code: string;
+            name: string;
+            description: string;
+            /** @description Two-decimal amount string */
+            monthly_price: string;
+            yearly_price: string;
+            currency: string;
+            highlighted: boolean;
+            cta_label: string;
+            cta_url: string;
+            features: string[];
+            sort_order: number;
+        };
+        PublicPricing: {
+            locale: string;
+            currency: string;
+            plans: components["schemas"]["PublicPlan"][];
+        };
+        PublicPricingSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["PublicPricing"];
+        };
+        PublicPageSummary: {
+            slug: string;
+            title: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        PublicPageList: {
+            locale: string;
+            items: components["schemas"]["PublicPageSummary"][];
+        };
+        PublicPageListSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["PublicPageList"];
+        };
+        PublicPage: {
+            locale: string;
+            slug: string;
+            title: string;
+            /** @description Server-sanitized Markdown */
+            body_md: string;
+            seo_title: string;
+            seo_description: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        PublicPageSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["PublicPage"];
+        };
+        PublicDocArticleSummary: {
+            id: string;
+            slug: string;
+            title: string;
+            sort_order: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        PublicDocCategory: {
+            id: string;
+            slug: string;
+            name: string;
+            sort_order: number;
+            articles: components["schemas"]["PublicDocArticleSummary"][];
+        };
+        PublicDocs: {
+            locale: string;
+            categories: components["schemas"]["PublicDocCategory"][];
+        };
+        PublicDocsSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["PublicDocs"];
+        };
+        PublicDocCategoryRef: {
+            id: string;
+            slug: string;
+            name: string;
+        };
+        PublicDocRef: {
+            slug: string;
+            title: string;
+        };
+        PublicDocArticle: {
+            locale: string;
+            id: string;
+            slug: string;
+            title: string;
+            /** @description Server-sanitized Markdown */
+            body_md: string;
+            category: components["schemas"]["PublicDocCategoryRef"];
+            prev: components["schemas"]["PublicDocRef"] | null;
+            next: components["schemas"]["PublicDocRef"] | null;
+            seo_title: string;
+            seo_description: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        PublicDocSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["PublicDocArticle"];
+        };
+        SiteSettingsTranslation: {
+            tagline?: string;
+            footer_text?: string;
+            seo_default_title?: string;
+            seo_default_description?: string;
+            icp_record?: string;
+        };
+        SiteSettings: {
+            site_name: string;
+            logo_url: string;
+            logo_dark_url: string;
+            favicon_url: string;
+            contact_email: string;
+            contact_phone: string;
+            contact_address: string;
+            social_links: components["schemas"]["SocialLink"][];
+            seo_default_og_image_url: string;
+            default_locale: string;
+            translations: {
+                [key: string]: components["schemas"]["SiteSettingsTranslation"];
+            };
+            version: number;
+            updated_by: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        SiteSettingsSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["SiteSettings"];
+        };
+        SiteSettingsWrite: {
+            site_name: string;
+            logo_url?: string;
+            logo_dark_url?: string;
+            favicon_url?: string;
+            contact_email?: string;
+            contact_phone?: string;
+            contact_address?: string;
+            social_links?: components["schemas"]["SocialLink"][];
+            seo_default_og_image_url?: string;
+            /** @description Must be an enabled locale */
+            default_locale: string;
+            translations?: {
+                [key: string]: components["schemas"]["SiteSettingsTranslation"];
+            };
+            version: number;
+        };
+        NavigationTranslation: {
+            label?: string;
+        };
+        NavigationItem: {
+            id: string;
+            /** @enum {string} */
+            placement: "header" | "footer";
+            parent_id: string | null;
+            url: string;
+            /** @enum {string} */
+            target: "_self" | "_blank";
+            sort_order: number;
+            visible: boolean;
+            translations: {
+                [key: string]: components["schemas"]["NavigationTranslation"];
+            };
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        NavigationItemSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["NavigationItem"];
+        };
+        NavigationItemPageSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: {
+                items: components["schemas"]["NavigationItem"][];
+                total: number;
+                page: number;
+                page_size: number;
+            };
+        };
+        NavigationItemWrite: {
+            /** @enum {string} */
+            placement?: "header" | "footer";
+            /** @description Absent keeps the current parent; empty string clears it */
+            parent_id?: string | null;
+            url?: string;
+            /** @enum {string} */
+            target?: "_self" | "_blank";
+            sort_order?: number;
+            visible?: boolean;
+            translations?: {
+                [key: string]: components["schemas"]["NavigationTranslation"];
+            };
+        };
+        HomeSection: {
+            id: string;
+            type: string;
+            sort_order: number;
+            published: boolean;
+            /** @description Non-translatable base data merged under each locale */
+            data: {
+                [key: string]: unknown;
+            };
+            translations: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        HomeSectionSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["HomeSection"];
+        };
+        HomeSectionPageSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: {
+                items: components["schemas"]["HomeSection"][];
+                total: number;
+                page: number;
+                page_size: number;
+            };
+        };
+        HomeSectionWrite: {
+            type?: string;
+            sort_order?: number;
+            published?: boolean;
+            data?: {
+                [key: string]: unknown;
+            };
+            translations?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        FeatureTranslation: {
+            title?: string;
+            summary?: string;
+            /** @description Server-sanitized Markdown */
+            body_md?: string;
+            image_url?: string;
+        };
+        Feature: {
+            id: string;
+            icon: string;
+            sort_order: number;
+            published: boolean;
+            translations: {
+                [key: string]: components["schemas"]["FeatureTranslation"];
+            };
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        FeatureSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["Feature"];
+        };
+        FeaturePageSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: {
+                items: components["schemas"]["Feature"][];
+                total: number;
+                page: number;
+                page_size: number;
+            };
+        };
+        FeatureWrite: {
+            icon?: string;
+            sort_order?: number;
+            published?: boolean;
+            translations?: {
+                [key: string]: components["schemas"]["FeatureTranslation"];
+            };
+        };
+        PricingPlanTranslation: {
+            name?: string;
+            description?: string;
+            cta_label?: string;
+            cta_url?: string;
+        };
+        PricingPlan: {
+            id: string;
+            code: string;
+            monthly_price: string;
+            yearly_price: string;
+            currency: string;
+            highlighted: boolean;
+            sort_order: number;
+            visible: boolean;
+            translations: {
+                [key: string]: components["schemas"]["PricingPlanTranslation"];
+            };
+            features: {
+                [key: string]: string[];
+            };
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        PricingPlanSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["PricingPlan"];
+        };
+        PricingPlanPageSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: {
+                items: components["schemas"]["PricingPlan"][];
+                total: number;
+                page: number;
+                page_size: number;
+            };
+        };
+        PricingPlanWrite: {
+            code?: string;
+            monthly_price?: string;
+            yearly_price?: string;
+            currency?: string;
+            highlighted?: boolean;
+            sort_order?: number;
+            visible?: boolean;
+            translations?: {
+                [key: string]: components["schemas"]["PricingPlanTranslation"];
+            };
+            features?: {
+                [key: string]: string[];
+            };
+        };
+        PageTranslation: {
+            title?: string;
+            /** @description Server-sanitized Markdown */
+            body_md?: string;
+            seo_title?: string;
+            seo_description?: string;
+        };
+        Page: {
+            id: string;
+            slug: string;
+            published: boolean;
+            sort_order: number;
+            translations: {
+                [key: string]: components["schemas"]["PageTranslation"];
+            };
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        PageSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["Page"];
+        };
+        PageListSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: {
+                items: components["schemas"]["Page"][];
+                total: number;
+                page: number;
+                page_size: number;
+            };
+        };
+        PageWrite: {
+            slug?: string;
+            published?: boolean;
+            sort_order?: number;
+            translations?: {
+                [key: string]: components["schemas"]["PageTranslation"];
+            };
+        };
+        DocCategoryName: {
+            name?: string;
+        };
+        DocCategory: {
+            id: string;
+            slug: string;
+            sort_order: number;
+            translations: {
+                [key: string]: components["schemas"]["DocCategoryName"];
+            };
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        DocCategorySuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["DocCategory"];
+        };
+        DocCategoryPageSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: {
+                items: components["schemas"]["DocCategory"][];
+                total: number;
+                page: number;
+                page_size: number;
+            };
+        };
+        DocCategoryWrite: {
+            slug?: string;
+            sort_order?: number;
+            translations?: {
+                [key: string]: components["schemas"]["DocCategoryName"];
+            };
+        };
+        DocArticleTranslation: {
+            title?: string;
+            /** @description Server-sanitized Markdown */
+            body_md?: string;
+            seo_title?: string;
+            seo_description?: string;
+        };
+        DocArticle: {
+            id: string;
+            slug: string;
+            category_id: string;
+            sort_order: number;
+            published: boolean;
+            translations: {
+                [key: string]: components["schemas"]["DocArticleTranslation"];
+            };
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        DocArticleSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["DocArticle"];
+        };
+        DocArticlePageSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: {
+                items: components["schemas"]["DocArticle"][];
+                total: number;
+                page: number;
+                page_size: number;
+            };
+        };
+        DocArticleWrite: {
+            slug?: string;
+            category_id?: string;
+            sort_order?: number;
+            published?: boolean;
+            translations?: {
+                [key: string]: components["schemas"]["DocArticleTranslation"];
+            };
+        };
+        ContactReceipt: {
+            id: string;
+            /** Format: date-time */
+            submitted_at: string;
+        };
+        ContactReceiptSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["ContactReceipt"];
+        };
+        ContactSubmission: {
+            id: string;
+            name: string;
+            email: string;
+            company: string;
+            message: string;
+            locale: string;
+            /** @enum {string} */
+            status: "new" | "read" | "handled";
+            source_ip: string;
+            user_agent: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ContactSubmissionSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["ContactSubmission"];
+        };
+        ContactSubmissionPageSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: {
+                items: components["schemas"]["ContactSubmission"][];
+                total: number;
+                page: number;
+                page_size: number;
+            };
+        };
+        ContactStatusWrite: {
+            /** @enum {string} */
+            status: "new" | "read" | "handled";
+        };
+        MediaAsset: {
+            id: string;
+            url: string;
+            mime: string;
+            size: number;
+            width: number;
+            height: number;
+        };
+        MediaAssetSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: components["schemas"]["MediaAsset"];
+        };
+        MediaAssetPageSuccess: components["schemas"]["Envelope"] & {
+            /** @enum {unknown} */
+            code?: 0;
+            data?: {
+                items: components["schemas"]["MediaAsset"][];
+                total: number;
+                page: number;
+                page_size: number;
+            };
+        };
     };
     responses: {
         /** @description Authentication required, session invalid, replayed token, or account disabled */
@@ -1307,6 +2455,12 @@ export interface components {
          */
         RequestID: string;
         ResourceID: string;
+        /** @description Requested locale; unknown or disabled values fall back to the default locale. */
+        Locale: string;
+        /** @description Navigation placement filter (defaults to header). */
+        Placement: "header" | "footer";
+        Slug: string;
+        MediaFilename: string;
     };
     requestBodies: never;
     headers: {
@@ -3019,6 +4173,1617 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["SettingsConflict"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    getPublicNavigation: {
+        parameters: {
+            query?: {
+                /** @description Requested locale; unknown or disabled values fall back to the default locale. */
+                locale?: components["parameters"]["Locale"];
+                /** @description Navigation placement filter (defaults to header). */
+                placement?: components["parameters"]["Placement"];
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Visible navigation for the effective locale */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicNavigationSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    getPublicHome: {
+        parameters: {
+            query?: {
+                /** @description Requested locale; unknown or disabled values fall back to the default locale. */
+                locale?: components["parameters"]["Locale"];
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published home sections for the effective locale */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicHomeSuccess"];
+                };
+            };
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    getPublicFeatures: {
+        parameters: {
+            query?: {
+                /** @description Requested locale; unknown or disabled values fall back to the default locale. */
+                locale?: components["parameters"]["Locale"];
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published features for the effective locale */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicFeaturesSuccess"];
+                };
+            };
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    getPublicPricing: {
+        parameters: {
+            query?: {
+                /** @description Requested locale; unknown or disabled values fall back to the default locale. */
+                locale?: components["parameters"]["Locale"];
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Visible pricing plans for the effective locale */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPricingSuccess"];
+                };
+            };
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    getPublicPages: {
+        parameters: {
+            query?: {
+                /** @description Requested locale; unknown or disabled values fall back to the default locale. */
+                locale?: components["parameters"]["Locale"];
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published pages for the effective locale */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPageListSuccess"];
+                };
+            };
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    getPublicPage: {
+        parameters: {
+            query?: {
+                /** @description Requested locale; unknown or disabled values fall back to the default locale. */
+                locale?: components["parameters"]["Locale"];
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                slug: components["parameters"]["Slug"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published page for the effective locale */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPageSuccess"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    getPublicDocs: {
+        parameters: {
+            query?: {
+                /** @description Requested locale; unknown or disabled values fall back to the default locale. */
+                locale?: components["parameters"]["Locale"];
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Documentation categories and published articles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicDocsSuccess"];
+                };
+            };
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    getPublicDoc: {
+        parameters: {
+            query?: {
+                /** @description Requested locale; unknown or disabled values fall back to the default locale. */
+                locale?: components["parameters"]["Locale"];
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                slug: components["parameters"]["Slug"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published article for the effective locale */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicDocSuccess"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    submitPublicContact: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    /** Format: email */
+                    email: string;
+                    company?: string;
+                    message: string;
+                    locale?: string;
+                    /** @enum {boolean} */
+                    consent: true;
+                    /** @description Honeypot; must be empty */
+                    website?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Submission accepted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactReceiptSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimited"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    getMediaFile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                filename: components["parameters"]["MediaFilename"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media bytes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/*": string;
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getSiteSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Site settings singleton */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteSettingsSuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    updateSiteSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteSettingsWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated site settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteSettingsSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["SettingsConflict"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    listNavigationItems: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                /** @description Navigation placement filter (defaults to header). */
+                placement?: components["parameters"]["Placement"];
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated navigation items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NavigationItemPageSuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    createNavigationItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NavigationItemWrite"];
+            };
+        };
+        responses: {
+            /** @description Created navigation item */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NavigationItemSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    deleteNavigationItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptySuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    updateNavigationItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NavigationItemWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated navigation item */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NavigationItemSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    listHomeSections: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated home sections */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeSectionPageSuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    createHomeSection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HomeSectionWrite"];
+            };
+        };
+        responses: {
+            /** @description Created home section */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeSectionSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    deleteHomeSection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptySuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    updateHomeSection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HomeSectionWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated home section */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeSectionSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    listFeatures: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated features */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeaturePageSuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    createFeature: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeatureWrite"];
+            };
+        };
+        responses: {
+            /** @description Created feature */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    deleteFeature: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptySuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    updateFeature: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeatureWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated feature */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    listPricingPlans: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated pricing plans */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricingPlanPageSuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    createPricingPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PricingPlanWrite"];
+            };
+        };
+        responses: {
+            /** @description Created pricing plan */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricingPlanSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    deletePricingPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptySuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    updatePricingPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PricingPlanWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated pricing plan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricingPlanSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    listPages: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated pages */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListSuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    createPage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PageWrite"];
+            };
+        };
+        responses: {
+            /** @description Created page */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    getPage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page with all translations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageSuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    deletePage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptySuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    updatePage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PageWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    listDocCategories: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated documentation categories */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocCategoryPageSuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    createDocCategory: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocCategoryWrite"];
+            };
+        };
+        responses: {
+            /** @description Created documentation category */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocCategorySuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    deleteDocCategory: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptySuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    updateDocCategory: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocCategoryWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated documentation category */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocCategorySuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    listDocArticles: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated documentation articles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocArticlePageSuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    createDocArticle: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocArticleWrite"];
+            };
+        };
+        responses: {
+            /** @description Created documentation article */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocArticleSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    getDocArticle: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Article with all translations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocArticleSuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    deleteDocArticle: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptySuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    updateDocArticle: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocArticleWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated documentation article */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocArticleSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    listContactSubmissions: {
+        parameters: {
+            query?: {
+                /** @description Filter by inbox status */
+                status?: "new" | "read" | "handled";
+                page?: number;
+                page_size?: number;
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated contact submissions, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactSubmissionPageSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    getContactSubmission: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contact submission */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactSubmissionSuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    updateContactSubmissionStatus: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactStatusWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated contact submission */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactSubmissionSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    listMedia: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated media assets, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAssetPageSuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["DependencyUnavailable"];
+        };
+    };
+    uploadMedia: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Uploaded media asset */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAssetSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    deleteMedia: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptySuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             503: components["responses"]["AuditUnavailable"];
         };
     };

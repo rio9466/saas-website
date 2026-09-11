@@ -55,3 +55,71 @@ export type UserLevelListData = NonNullable<
 >;
 export type SystemSettings = components["schemas"]["SystemSettings"];
 export type PublicSettings = components["schemas"]["PublicSettings"];
+export type SocialLink = components["schemas"]["SocialLink"];
+export type LocaleOption = components["schemas"]["LocaleOption"];
+
+// ---- 内容管理（契约 §6） ----
+export type SiteSettingsTranslation =
+  components["schemas"]["SiteSettingsTranslation"];
+export type SiteSettings = components["schemas"]["SiteSettings"];
+export type SiteSettingsWrite = components["schemas"]["SiteSettingsWrite"];
+
+export type NavigationItem = components["schemas"]["NavigationItem"];
+export type NavigationItemWrite = components["schemas"]["NavigationItemWrite"];
+export type NavigationItemPageData = NonNullable<
+  components["schemas"]["NavigationItemPageSuccess"]["data"]
+>;
+
+export type HomeSection = components["schemas"]["HomeSection"];
+export type HomeSectionWrite = components["schemas"]["HomeSectionWrite"];
+export type HomeSectionPageData = NonNullable<
+  components["schemas"]["HomeSectionPageSuccess"]["data"]
+>;
+
+export type Feature = components["schemas"]["Feature"];
+export type FeatureTranslation = components["schemas"]["FeatureTranslation"];
+export type FeatureWrite = components["schemas"]["FeatureWrite"];
+export type FeaturePageData = NonNullable<
+  components["schemas"]["FeaturePageSuccess"]["data"]
+>;
+
+export type PricingPlan = components["schemas"]["PricingPlan"];
+export type PricingPlanTranslation =
+  components["schemas"]["PricingPlanTranslation"];
+export type PricingPlanWrite = components["schemas"]["PricingPlanWrite"];
+export type PricingPlanPageData = NonNullable<
+  components["schemas"]["PricingPlanPageSuccess"]["data"]
+>;
+
+export type ContentPage = components["schemas"]["Page"];
+export type PageTranslation = components["schemas"]["PageTranslation"];
+export type PageWrite = components["schemas"]["PageWrite"];
+export type ContentPageListData = NonNullable<
+  components["schemas"]["PageListSuccess"]["data"]
+>;
+
+export type DocCategory = components["schemas"]["DocCategory"];
+export type DocCategoryWrite = components["schemas"]["DocCategoryWrite"];
+export type DocCategoryPageData = NonNullable<
+  components["schemas"]["DocCategoryPageSuccess"]["data"]
+>;
+
+export type DocArticle = components["schemas"]["DocArticle"];
+export type DocArticleTranslation =
+  components["schemas"]["DocArticleTranslation"];
+export type DocArticleWrite = components["schemas"]["DocArticleWrite"];
+export type DocArticlePageData = NonNullable<
+  components["schemas"]["DocArticlePageSuccess"]["data"]
+>;
+
+export type MediaAsset = components["schemas"]["MediaAsset"];
+export type MediaAssetPageData = NonNullable<
+  components["schemas"]["MediaAssetPageSuccess"]["data"]
+>;
+
+export type ContactSubmission = components["schemas"]["ContactSubmission"];
+export type ContactSubmissionPageData = NonNullable<
+  components["schemas"]["ContactSubmissionPageSuccess"]["data"]
+>;
+export type ContactStatus =
+  components["schemas"]["ContactStatusWrite"]["status"];
