@@ -34,7 +34,8 @@ admin console, and `backend/server/docs/` for architecture and API contract deta
   not merge into `master` without explicit user approval.
 - Work happens in Orca-managed git worktrees under `~/orca/workspaces/saas-website/<branch>`;
   the repo root (`~/orca/projects/saas-website`) stays on `master`.
-- Long-lived branches: `master-relay` (integration), `frontend-dev`, `backend-dev`.
+- Branch model: `master` (release) and `master-relay` (AI working / integration). Every task
+def gets an ephemeral branch cut from `master-relay`.
 - To start a task: switch to the target branch in Orca, open a pi terminal in that worktree,
   and hand pi the task document. Feature work merges back into `master-relay`.
 - Full workflow reference (roles, task dispatch, initialization paths): `ORCA_WORKFLOW.md`.

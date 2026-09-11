@@ -1,6 +1,6 @@
 # 通用软件官网 — 产品需求文档（PRD）
 
-> Owner: `master-relay`（主线）。`frontend-dev` / `backend-dev` 及任务分支不得编辑本文件。
+> Owner: `master-relay`（主线）。任何任务分支不得编辑本文件。
 > Status: **已评审并拆解为任务（v0.1）** — 开放问题在评审前按 §13 的「默认假设」执行；
 > 任务见 `docs/tasks/`，接口契约见 `docs/api/frontend-api-contract.md`。
 

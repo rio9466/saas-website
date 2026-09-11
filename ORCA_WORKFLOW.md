@@ -14,25 +14,24 @@ a project is initialized both with and without an existing scaffold.
 
 | Branch         | Role                                        | Base           | Merge target                     |
 | -------------- | ------------------------------------------- | -------------- | -------------------------------- |
-| `master`       | Frozen release branch                       | —              | only with explicit user approval |
-| `master-relay` | AI integration branch; orchestrator home    | `master`       | —                                |
-| `frontend-dev` | Long-lived frontend workstream              | `master-relay` | `master-relay`                   |
-| `backend-dev`  | Long-lived backend workstream (API + admin) | `master-relay` | `master-relay`                   |
-| `<task>`       | Ephemeral branch, one per task              | `master-relay` | `master-relay`                   |
+| `master`       | Frozen release branch                              | —              | only with explicit user approval |
+| `master-relay` | AI working / integration branch; orchestrator home | `master`       | —                                |
+| `<task>`       | Ephemeral branch, one per task                     | `master-relay` | `master-relay`                   |
 
 Rules:
 
 - Never commit directly to `master`; never merge into `master` without the user's explicit
   approval.
 - All merges land on `master-relay`.
-- New task branches are cut from `master-relay`, not from another feature branch.
+- New sub-branches (task branches) are always created from the AI working branch
+  `master-relay`, never from `master` or another task branch.
 
 ## 2. Roles
 
 - **Orchestrator ("master pi")** — the pi agent in the `master-relay` worktree. Owns the
   branch model, writes and publishes task documents, reviews and merges results.
-- **Executor pi** — a pi agent in a task or workstream worktree. Implements exactly one task
-  document and reports evidence back.
+- **Executor pi** — a pi agent in a task worktree cut from `master-relay`. Implements exactly
+  one task document and reports evidence back.
 
 ## 3. Task dispatch
 
@@ -107,7 +106,7 @@ Strong rules:
 
 - Cross-cutting documents (PRD, ADR, architecture, root `AGENTS.md`, `ORCA_WORKFLOW.md`) are
   owned by the main line: `master-relay`, later published to `master`.
-- If you are on `frontend-dev`, `backend-dev`, or any area/feature task branch, do NOT create
+- If you are on a task branch (anything other than `master-relay`), do NOT create
   or edit those documents. Stop and report: "This is cross-cutting documentation owned by
   `master-relay`. Open a pi terminal on `master-relay` (or on a docs branch cut from it) to do
   this."
@@ -120,14 +119,14 @@ Where to do what:
 | Work                                                     | Branch to open a pi terminal on                          |
 | -------------------------------------------------------- | -------------------------------------------------------- |
 | PRD, ADRs, architecture, process/rule changes            | `master-relay` (or a `docs/<topic>` branch cut from it)  |
-| Frontend feature work                                    | `frontend-dev` or a frontend task branch                 |
-| Backend feature work                                     | `backend-dev` or a backend task branch                   |
+| Frontend feature work                                    | a frontend task branch cut from `master-relay`           |
+| Backend feature work                                     | a backend task branch cut from `master-relay`            |
 
 ## 5. Initialization scenarios
 
 ### A. No scaffold given (greenfield)
 
-Do it on the owning workstream branch, commit, and prove it builds.
+Do it on a task branch cut from `master-relay`, commit, and prove it builds.
 
 1. Choose the stack and pin versions (see `frontend/` for the current example).
 2. Scaffold inside the worktree, e.g.:

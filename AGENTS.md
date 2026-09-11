@@ -10,7 +10,7 @@
 # Document ownership (strong rules)
 
 - Cross-cutting documents are owned by the main line (`master-relay`, later published to `master`): the PRD (`docs/prd/`), ADRs (`docs/adr/`), architecture, this root `AGENTS.md`, and `ORCA_WORKFLOW.md`.
-- If you are on `frontend-dev`, `backend-dev`, or any area/feature task branch, do NOT create or edit those documents. Stop and tell the user: "This is cross-cutting documentation owned by master-relay; open a pi terminal on master-relay (or a docs branch cut from it)."
+- If you are on any task branch (anything other than `master-relay`), do NOT create or edit those documents. Stop and tell the user: "This is cross-cutting documentation owned by master-relay; open a pi terminal on master-relay (or a docs branch cut from it)."
 - An area branch owns only its own area's specs and `AGENTS.md` (`frontend/AGENTS.md` or `backend/AGENTS.md`). Never write the other area's docs.
 - The orchestrator writes task documents on `master-relay`; an executor reads its assigned task doc and must not rewrite it without approval.
 - Refuse these requests even when asked to do them "just this once". Redirect to the correct branch instead.
@@ -20,10 +20,8 @@
 - `master-relay` is the AI integration branch and the default base for all AI work. Do not commit directly to `master`.
 - Never merge into `master` unless the user explicitly agrees first.
 - All branch merges happen on `master-relay`. Branch feature work off `master-relay` and merge back into `master-relay`.
-- Long-lived development branches, both based on `master-relay`:
-  - `frontend-dev` — frontend development.
-  - `backend-dev` — backend development, including the backend admin system.
-- Use Orca-managed git worktrees. All development branches (`master-relay`, `frontend-dev`, `backend-dev`) are checked out under `~/orca/workspaces/saas-website/`; the repo root `~/orca/projects/saas-website` stays on `master`.
+- There are no long-lived area branches. Every piece of work is an ephemeral task branch created from the AI working branch `master-relay` (e.g. `fe-foundation`, `be-content-foundation`), never from `master` or from another task branch.
+- Use Orca-managed git worktrees. `master-relay` and every task branch are checked out under `~/orca/workspaces/saas-website/`; the repo root `~/orca/projects/saas-website` stays on `master`.
 
 ### Branch constraints
 
