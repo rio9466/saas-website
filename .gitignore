@@ -14,3 +14,6 @@
 
 # Dependencies (subprojects keep their own .gitignore too)
 node_modules/
+
+# Conversation pi persistent memory — local only, never committed
+CONVERSATION_MEMORY.md
