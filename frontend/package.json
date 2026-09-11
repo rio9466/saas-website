@@ -7,18 +7,26 @@
     "dev": "nuxt dev",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "lint": "eslint .",
+    "lint": "eslint . && node i18n/check-locales.mjs",
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.129",
     "@iconify-json/simple-icons": "^1.2.94",
+    "@nuxt/icon": "^2.5.1",
     "@nuxt/ui": "^4.11.0",
+    "@nuxtjs/i18n": "10.6.0",
+    "@pinia/nuxt": "^1.0.2",
+    "isomorphic-dompurify": "^4.2.0",
+    "markdown-it": "^15.0.1",
     "nuxt": "^4.5.2",
+    "pinia": "^4.0.3",
+    "pinia-plugin-persistedstate": "^4.7.1",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.17.0",
+    "@types/markdown-it": "^14.2.0",
     "eslint": "^10.10.0",
     "typescript": "^6.0.3",
     "vue-tsc": "^3.3.11"

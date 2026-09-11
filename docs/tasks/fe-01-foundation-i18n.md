@@ -81,7 +81,7 @@
 
 ## Acceptance criteria
 
-- [ ] `pnpm dev` 下 `/`（英文）与 `/zh`、`/zh/features` 等路由可访问，语言切换停留在当前页。
+- [ ] `pnpm dev` 下 `/`（英文）与 `/zh-CN`、`/zh-CN/features` 等路由可访问，语言切换停留在当前页。
 - [ ] 头部/页脚品牌信息来自 `/api/v1/public/settings`；接口不可用时显示兜底且不报错。
 - [ ] 所有请求经由 `useApi`，浏览器 Network 中无跨域请求、无后端直连地址。
 - [ ] 401 时单次 refresh 重试生效；refresh 失败清空登录态。
@@ -95,7 +95,7 @@
 cd frontend
 pnpm install
 pnpm lint && pnpm typecheck && pnpm build
-pnpm dev   # 手工核对 / 与 /zh 路由、语言切换、页脚、404
+pnpm dev   # 手工核对 / 与 /zh-CN 路由、语言切换、页脚、404
 ```
 
 预期：构建通过；两种语言页面正常；无跨域请求。

@@ -37,20 +37,24 @@ func (s UserCookieSettings) normalized() UserCookieSettings {
 // UserAuthHandlers serves public settings and business-user authentication.
 type UserAuthHandlers struct {
 	svc            UserClientService
+	content        ContentService
 	cookie         UserCookieSettings
 	trustedOrigins []string
 }
 
-// NewUserAuthHandlers constructs user auth handlers.
-func NewUserAuthHandlers(svc UserClientService, cookie UserCookieSettings, trustedOrigins []string) *UserAuthHandlers {
+// NewUserAuthHandlers constructs user auth handlers. content may be nil, in
+// which case GET /public/settings returns only the platform fields.
+func NewUserAuthHandlers(svc UserClientService, content ContentService, cookie UserCookieSettings, trustedOrigins []string) *UserAuthHandlers {
 	return &UserAuthHandlers{
 		svc:            svc,
+		content:        content,
 		cookie:         cookie.normalized(),
 		trustedOrigins: append([]string(nil), trustedOrigins...),
 	}
 }
 
-// PublicSettings returns the safe settings whitelist.
+// PublicSettings returns the safe settings whitelist merged with content
+// settings when a content service is wired.
 func (h *UserAuthHandlers) PublicSettings(c *gin.Context) {
 	result, err := h.svc.GetPublicSettings(c.Request.Context())
 	if err != nil {
@@ -58,6 +62,15 @@ func (h *UserAuthHandlers) PublicSettings(c *gin.Context) {
 		return
 	}
 	data := toPublicSettingsData(result)
+	if h.content != nil {
+		contentSettings, cerr := h.content.GetPublicSettings(c.Request.Context(), c.Query("locale"))
+		if cerr != nil {
+			middleware.WriteAppError(c, cerr)
+			return
+		}
+		applyPublicContentSettings(&data, contentSettings)
+	}
+	setPublicCache(c)
 	response.OK(c, data)
 }
 
@@ -192,6 +205,92 @@ func (h *UserAuthHandlers) Me(c *gin.Context) {
 		return
 	}
 	response.OK(c, toUserMeData(user))
+}
+
+// UpdateMe updates the authenticated user's own nickname and/or avatar. Other
+// profile fields are never bound to this request.
+func (h *UserAuthHandlers) UpdateMe(c *gin.Context) {
+	var req userUpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, apperr.CodeValidation, "validation failed")
+		return
+	}
+	user, err := h.svc.UpdateProfile(c.Request.Context(), userActorFromContext(c), UserUpdateProfileInput{
+		Nickname:  req.Nickname,
+		AvatarURL: req.AvatarURL,
+	})
+	if err != nil {
+		middleware.WriteAppError(c, err)
+		return
+	}
+	response.OK(c, toUserMeData(user))
+}
+
+// ChangePassword verifies the current password, rotates it, revokes every
+// session, and clears the refresh cookie.
+func (h *UserAuthHandlers) ChangePassword(c *gin.Context) {
+	var req userChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, apperr.CodeValidation, "validation failed")
+		return
+	}
+	if err := h.svc.ChangePassword(c.Request.Context(), userActorFromContext(c), req.CurrentPassword, req.NewPassword); err != nil {
+		middleware.WriteAppError(c, err)
+		return
+	}
+	h.clearUserRefreshCookie(c)
+	response.OK(c, map[string]any{})
+}
+
+// MyPointTransactions returns the authenticated user's own ledger page.
+func (h *UserAuthHandlers) MyPointTransactions(c *gin.Context) {
+	page, pageSize := pageParams(c)
+	result, err := h.svc.ListMyPointTransactions(c.Request.Context(), userActorFromContext(c), page, pageSize)
+	if err != nil {
+		middleware.WriteAppError(c, err)
+		return
+	}
+	response.OK(c, pageData{
+		Items:    toPointTransactionList(result.Items),
+		Total:    result.Total,
+		Page:     result.Page,
+		PageSize: result.PageSize,
+	})
+}
+
+// ForgotPassword always returns 200 for valid input, whether or not the address
+// exists; only rate limiting and validation surface as errors.
+func (h *UserAuthHandlers) ForgotPassword(c *gin.Context) {
+	var req userForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, apperr.CodeValidation, "validation failed")
+		return
+	}
+	req.Email = strings.TrimSpace(req.Email)
+	if req.Email == "" {
+		response.Error(c, http.StatusBadRequest, apperr.CodeValidation, "validation failed")
+		return
+	}
+	if err := h.svc.ForgotPassword(c.Request.Context(), anonymousActor(c), req.Email); err != nil {
+		middleware.WriteAppError(c, err)
+		return
+	}
+	response.OK(c, map[string]any{})
+}
+
+// ResetPassword redeems a one-time reset token and rotates the password.
+func (h *UserAuthHandlers) ResetPassword(c *gin.Context) {
+	var req userResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, apperr.CodeValidation, "validation failed")
+		return
+	}
+	if err := h.svc.ResetPassword(c.Request.Context(), anonymousActor(c), req.Email, req.Token, req.NewPassword); err != nil {
+		middleware.WriteAppError(c, err)
+		return
+	}
+	h.clearUserRefreshCookie(c)
+	response.OK(c, map[string]any{})
 }
 
 func (h *UserAuthHandlers) requireTrustedOrigin(c *gin.Context) bool {

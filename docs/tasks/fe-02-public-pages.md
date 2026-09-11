@@ -101,7 +101,7 @@ cd frontend
 pnpm lint && pnpm typecheck && pnpm build
 pnpm dev
 # 手工核对（后端已启动）：
-#   /            /zh
+#   /            /zh-CN
 #   /features    /pricing    /about    /docs    /docs/<slug>    /contact
 #   /sitemap.xml
 ```

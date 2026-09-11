@@ -13,13 +13,18 @@
 
 | ID    | 任务                                             | 分支                     | Base           | 依赖                    | 状态 | 证据 / 说明            |
 | ----- | ------------------------------------------------ | ------------------------ | -------------- | ----------------------- | ---- | ---------------------- |
-| BE-01 | 内容基础模型 + 公开内容接口 + 管理端内容 CRUD     | `be-content-foundation`  | `master-relay` | —                       | in-progress | 已认领 c5657c2          |
-| BE-02 | 联系表单与收件箱                                  | `be-contact-inbox`       | `master-relay` | BE-01                   | todo | —                      |
-| BE-03 | 用户控制台 API                                    | `be-user-console-api`    | `master-relay` | —                       | todo | —                      |
-| BE-04 | 管理端内容 UI                                     | `be-admin-content-ui`    | `master-relay` | BE-01、BE-02            | todo | —                      |
-| FE-01 | 前端基础：i18n + 布局 + API 客户端 + SEO          | `fe-foundation`          | `master-relay` | —                       | in-progress | 已认领 137edbf          |
-| FE-02 | 公开页面（首页/功能/价格/关于/文档）              | `fe-public-pages`        | `master-relay` | BE-01、BE-02、FE-01     | todo | —                      |
-| FE-03 | 登录 / 注册 / 用户中心                            | `fe-auth-account`        | `master-relay` | BE-03、FE-01、FE-02     | todo | —                      |
+| BE-01 | 内容基础模型 + 公开内容接口 + 管理端内容 CRUD     | `be-content-foundation`  | `master-relay` | —                       | done | 已合入 38e2e9c          |
+| BE-02 | 联系表单与收件箱                                  | `be-contact-inbox`       | `master-relay` | BE-01                   | done | 已合入 2b20723（分支已删） |
+| BE-03 | 用户控制台 API                                    | `be-user-console-api`    | `master-relay` | —                       | done | 已合入 5a0f461（分支已删） |
+| BE-04 | 管理端内容 UI                                     | `be-admin-content-ui`    | `master-relay` | BE-01、BE-02            | done | 已合入 f1b57cb+2e6448d（分支已删） |
+| FE-01 | 前端基础：i18n + 布局 + API 客户端 + SEO          | `fe-foundation`          | `master-relay` | —                       | done | 已合入 f83c373          |
+| FE-02 | 公开页面（首页/功能/价格/关于/文档）              | `fe-public-pages`        | `master-relay` | BE-01、BE-02、FE-01     | done | 已合入 fa9a792（分支已删） |
+| FE-03 | 登录 / 注册 / 用户中心                            | `fe-auth-account`        | `master-relay` | BE-03、FE-01、FE-02     | done | 已合入 c251ffd（含 /api 代理 502 修复） |
+| HOTFIX-01 | 运行时错误（Nuxt 500 + admin .env 崩溃）    | `hotfix-runtime-errors`  | `master-relay` | —                       | done | 已合入 5e5f809          |
+| FIX-FE-UX | 前端体验：语言切换/记忆、表单红框、页脚居中 | `fix-fe-ux` | `master-relay` | — | done | 已合入 a5694a2 |
+| FIX-FE-I18N | 前端：内部跳转本地化 + Pinia 持久化语言/主题 | `fix-fe-i18n-links` | `master-relay` | — | done | 已合入 53fd452 |
+| ADMIN-UX-01 | 管理后台：多语言弹窗布局 / Vditor 编辑器 / 站点设置合并 | `admin-content-ux` | `master-relay` | — | done | 已合入 b3d9488 |
+| ADMIN-UX-02 | 管理后台：媒体选择器宽度 / Markdown 编辑器固定高度 | `fix-admin-media-md` | `master-relay` | — | done | 已合入 88732cd |
 
 ## 更新规则
 

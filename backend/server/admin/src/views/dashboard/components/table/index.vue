@@ -31,12 +31,7 @@ const { loading, columns, dataList, pagination, Empty, onCurrentChange } =
       </el-empty>
     </template>
     <template #operation="{ row }">
-      <el-button
-        plain
-        circle
-        size="small"
-        :title="`查看序号为${row.id}的详情`"
-      >
+      <el-button plain circle size="small" :title="`查看序号为${row.id}的详情`">
         <IconifyIconOffline icon="ri/search-line" />
       </el-button>
     </template>

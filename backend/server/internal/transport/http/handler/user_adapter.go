@@ -125,6 +125,29 @@ func (a *UserServiceAdapter) Me(ctx context.Context, actor Actor, userID int64) 
 	return a.Svc.Me(ctx, toSvcClientActor(actor), userID)
 }
 
+func (a *UserServiceAdapter) UpdateProfile(ctx context.Context, actor Actor, in UserUpdateProfileInput) (*userdomain.User, error) {
+	return a.Svc.UpdateProfile(ctx, toSvcClientActor(actor), usersvc.UpdateProfileInput{
+		Nickname:  in.Nickname,
+		AvatarURL: in.AvatarURL,
+	})
+}
+
+func (a *UserServiceAdapter) ChangePassword(ctx context.Context, actor Actor, currentPassword, newPassword string) error {
+	return a.Svc.ChangePassword(ctx, toSvcClientActor(actor), currentPassword, newPassword)
+}
+
+func (a *UserServiceAdapter) ListMyPointTransactions(ctx context.Context, actor Actor, page, pageSize int) (adminauth.Page[userdomain.PointTransaction], error) {
+	return a.Svc.ListMyPointTransactions(ctx, toSvcClientActor(actor), page, pageSize)
+}
+
+func (a *UserServiceAdapter) ForgotPassword(ctx context.Context, actor Actor, email string) error {
+	return a.Svc.ForgotPassword(ctx, toSvcClientActor(actor), email)
+}
+
+func (a *UserServiceAdapter) ResetPassword(ctx context.Context, actor Actor, email, token, newPassword string) error {
+	return a.Svc.ResetPassword(ctx, toSvcClientActor(actor), email, token, newPassword)
+}
+
 func mapUserLoginResult(res *usersvc.SessionResult) *UserLoginResult {
 	if res == nil {
 		return nil

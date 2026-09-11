@@ -1,15 +1,18 @@
 openapi: 3.0.3
 info:
   title: easy-admin Server API
-  version: 0.4.0
+  version: 0.5.0
   description: |
     easy-admin Go service API. Health probes plus administrator authentication,
     RBAC management, read-only audit APIs, and the business-user platform
     (public settings, registration, verification, authentication, and
-    administrator-managed users/levels/points/system settings). All responses
-    use the shared JSON envelope with a request ID. Persistent IDs are decimal
-    strings; timestamps are UTC RFC 3339; point values are fixed four-decimal
-    strings (for example "123.4567") to avoid JavaScript precision loss.
+    administrator-managed users/levels/points/system settings). Site-content
+    foundation: public branding/navigation/home/features/pricing/pages/docs
+    reads and administrator content CRUD with RBAC and pending-first audit.
+    All responses use the shared JSON envelope with a request ID. Persistent IDs
+    are decimal strings; timestamps are UTC RFC 3339; point values are fixed
+    four-decimal strings (for example "123.4567") to avoid JavaScript precision
+    loss; money values are two-decimal strings.
 servers:
   - url: http://127.0.0.1:8080
     description: Local development
@@ -36,6 +39,10 @@ tags:
     description: Business-user level management
   - name: admin-system-settings
     description: Typed platform system settings
+  - name: public-content
+    description: Unauthenticated public site-content reads (branding, navigation, pages, docs)
+  - name: admin-content
+    description: Administrator site-content CRUD
 paths:
   /healthz:
     get:
@@ -941,6 +948,193 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/AccountDisabled'
+    patch:
+      tags: [user-profile]
+      summary: Update the current user's nickname and/or avatar
+      description: |
+        At least one of nickname or avatar_url is required. username, email,
+        points, level, and status are never bound to this request and cannot be
+        changed here. avatar_url accepts an absolute http/https URL or a
+        root-relative path.
+      operationId: updateMe
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname: { type: string, minLength: 1 }
+                avatar_url: { type: string }
+      responses:
+        '200':
+          description: Updated profile (same shape as GET /me)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountDisabled'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/me/password:
+    post:
+      tags: [user-profile]
+      summary: Change the current user's password
+      description: |
+        Verifies the current password, stores the new hash (8-72 UTF-8 bytes),
+        and revokes every session for the user (auth_epoch bump). The response
+        clears the refresh cookie; the client must drop the in-memory access
+        token and log in again.
+      operationId: changeMyPassword
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: { type: string, format: password }
+                new_password: { type: string, format: password, minLength: 8, maxLength: 72, description: "UTF-8 encoded byte length between 8 and 72" }
+      responses:
+        '200':
+          description: Password changed; cookies cleared and sessions revoked
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+            Set-Cookie:
+              description: Cleared HttpOnly user refresh cookie
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountDisabled'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/me/point-transactions:
+    get:
+      tags: [user-profile]
+      summary: List the current user's point transactions
+      description: Only the authenticated user's own ledger, newest first.
+      operationId: listMyPointTransactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Paginated ledger
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointTransactionPageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountDisabled'
+  /api/v1/auth/forgot-password:
+    post:
+      tags: [user-auth]
+      summary: Request a password-reset email
+      description: |
+        Always returns 200 for valid input whether or not the address exists,
+        so account existence is never revealed. A one-time token is stored as a
+        sha256 digest under easy-admin:user-reset:{id} with a 1-hour default
+        TTL and emailed when the account exists. SMTP failures are logged and
+        never distinguish the address. Rate-limited per IP and per address
+        (3/hour each); Redis failures fail closed as 42901.
+      operationId: userForgotPassword
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Always success for valid input (existence never revealed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/v1/auth/reset-password:
+    post:
+      tags: [user-auth]
+      summary: Reset a password with a one-time token
+      description: |
+        Consumes the single-use token (atomic compare-and-delete), stores the
+        new password (8-72 UTF-8 bytes), bumps auth_epoch, and revokes every
+        session. A wrong, expired, or replayed token returns 40016. Rate-limited
+        per IP (10/hour); Redis failures fail closed as 42901.
+      operationId: userResetPassword
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, token, new_password]
+              properties:
+                email: { type: string, format: email }
+                token: { type: string, minLength: 1 }
+                new_password: { type: string, format: password, minLength: 8, maxLength: 72 }
+      responses:
+        '200':
+          description: Password reset; sessions revoked
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+            Set-Cookie:
+              description: Cleared HttpOnly user refresh cookie
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '400':
+          description: Invalid/expired/used token (40016) or validation failed (10001)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/VerificationInvalidError'
+                  - $ref: '#/components/schemas/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
   /api/v1/admin/users:
     get:
       tags: [admin-business-users]
@@ -1441,6 +1635,1275 @@ paths:
           $ref: '#/components/responses/SettingsConflict'
         '503':
           $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/public/navigation:
+    get:
+      tags: [public-content]
+      summary: Public navigation tree
+      operationId: getPublicNavigation
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Locale'
+        - $ref: '#/components/parameters/Placement'
+      responses:
+        '200':
+          description: Visible navigation for the effective locale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicNavigationSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+  /api/v1/public/home:
+    get:
+      tags: [public-content]
+      summary: Public home sections
+      operationId: getPublicHome
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Locale'
+      responses:
+        '200':
+          description: Published home sections for the effective locale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicHomeSuccess'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+  /api/v1/public/features:
+    get:
+      tags: [public-content]
+      summary: Public feature list
+      operationId: getPublicFeatures
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Locale'
+      responses:
+        '200':
+          description: Published features for the effective locale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicFeaturesSuccess'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+  /api/v1/public/pricing:
+    get:
+      tags: [public-content]
+      summary: Public pricing plans
+      operationId: getPublicPricing
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Locale'
+      responses:
+        '200':
+          description: Visible pricing plans for the effective locale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicPricingSuccess'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+  /api/v1/public/pages:
+    get:
+      tags: [public-content]
+      summary: Public page list
+      operationId: getPublicPages
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Locale'
+      responses:
+        '200':
+          description: Published pages for the effective locale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicPageListSuccess'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+  /api/v1/public/pages/{slug}:
+    get:
+      tags: [public-content]
+      summary: Public page detail
+      operationId: getPublicPage
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Slug'
+        - $ref: '#/components/parameters/Locale'
+      responses:
+        '200':
+          description: Published page for the effective locale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicPageSuccess'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+  /api/v1/public/docs:
+    get:
+      tags: [public-content]
+      summary: Public documentation tree
+      operationId: getPublicDocs
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Locale'
+      responses:
+        '200':
+          description: Documentation categories and published articles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicDocsSuccess'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+  /api/v1/public/docs/{slug}:
+    get:
+      tags: [public-content]
+      summary: Public documentation article
+      operationId: getPublicDoc
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Slug'
+        - $ref: '#/components/parameters/Locale'
+      responses:
+        '200':
+          description: Published article for the effective locale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicDocSuccess'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+  /api/v1/public/contact:
+    post:
+      tags: [public-content]
+      summary: Submit a public contact-form message
+      description: |
+        Validates name/email/message/consent, applies a per-IP fixed-window
+        rate limit, and persists the submission. The hidden `website` honeypot
+        yields a silent 201 without persisting. Redis failures fail closed.
+      operationId: submitPublicContact
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, message, consent]
+              properties:
+                name: { type: string, maxLength: 200 }
+                email: { type: string, format: email, maxLength: 254 }
+                company: { type: string, maxLength: 200 }
+                message: { type: string, maxLength: 5000 }
+                locale: { type: string, maxLength: 35 }
+                consent: { type: boolean, enum: [true] }
+                website: { type: string, description: "Honeypot; must be empty" }
+      responses:
+        '201':
+          description: Submission accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactReceiptSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+  /media/{filename}:
+    get:
+      tags: [public-content]
+      summary: Serve a stored media object
+      operationId: getMediaFile
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/MediaFilename'
+      responses:
+        '200':
+          description: Media bytes
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/admin/site-settings:
+    get:
+      tags: [admin-content]
+      summary: Read site settings (all languages)
+      operationId: getSiteSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Site settings singleton
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteSettingsSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    put:
+      tags: [admin-content]
+      summary: Replace site settings (optimistic lock)
+      operationId: updateSiteSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteSettingsWrite'
+      responses:
+        '200':
+          description: Updated site settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteSettingsSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/SettingsConflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/navigation-items:
+    get:
+      tags: [admin-content]
+      summary: List navigation items
+      operationId: listNavigationItems
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - $ref: '#/components/parameters/Placement'
+      responses:
+        '200':
+          description: Paginated navigation items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavigationItemPageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    post:
+      tags: [admin-content]
+      summary: Create navigation item
+      operationId: createNavigationItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NavigationItemWrite'
+      responses:
+        '201':
+          description: Created navigation item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavigationItemSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/navigation-items/{id}:
+    patch:
+      tags: [admin-content]
+      summary: Update navigation item
+      operationId: updateNavigationItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NavigationItemWrite'
+      responses:
+        '200':
+          description: Updated navigation item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavigationItemSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+    delete:
+      tags: [admin-content]
+      summary: Delete navigation item
+      operationId: deleteNavigationItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/home-sections:
+    get:
+      tags: [admin-content]
+      summary: List home sections
+      operationId: listHomeSections
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Paginated home sections
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeSectionPageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    post:
+      tags: [admin-content]
+      summary: Create home section
+      operationId: createHomeSection
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HomeSectionWrite'
+      responses:
+        '201':
+          description: Created home section
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeSectionSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/home-sections/{id}:
+    patch:
+      tags: [admin-content]
+      summary: Update home section
+      operationId: updateHomeSection
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HomeSectionWrite'
+      responses:
+        '200':
+          description: Updated home section
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeSectionSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+    delete:
+      tags: [admin-content]
+      summary: Delete home section
+      operationId: deleteHomeSection
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/features:
+    get:
+      tags: [admin-content]
+      summary: List features
+      operationId: listFeatures
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Paginated features
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeaturePageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    post:
+      tags: [admin-content]
+      summary: Create feature
+      operationId: createFeature
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureWrite'
+      responses:
+        '201':
+          description: Created feature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/features/{id}:
+    patch:
+      tags: [admin-content]
+      summary: Update feature
+      operationId: updateFeature
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureWrite'
+      responses:
+        '200':
+          description: Updated feature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+    delete:
+      tags: [admin-content]
+      summary: Delete feature
+      operationId: deleteFeature
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/pricing-plans:
+    get:
+      tags: [admin-content]
+      summary: List pricing plans
+      operationId: listPricingPlans
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Paginated pricing plans
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingPlanPageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    post:
+      tags: [admin-content]
+      summary: Create pricing plan
+      operationId: createPricingPlan
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PricingPlanWrite'
+      responses:
+        '201':
+          description: Created pricing plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingPlanSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/pricing-plans/{id}:
+    patch:
+      tags: [admin-content]
+      summary: Update pricing plan
+      operationId: updatePricingPlan
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PricingPlanWrite'
+      responses:
+        '200':
+          description: Updated pricing plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingPlanSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+    delete:
+      tags: [admin-content]
+      summary: Delete pricing plan
+      operationId: deletePricingPlan
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/pages:
+    get:
+      tags: [admin-content]
+      summary: List pages
+      operationId: listPages
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Paginated pages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageListSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    post:
+      tags: [admin-content]
+      summary: Create page
+      operationId: createPage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PageWrite'
+      responses:
+        '201':
+          description: Created page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/pages/{id}:
+    get:
+      tags: [admin-content]
+      summary: Read page (all languages)
+      operationId: getPage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Page with all translations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    patch:
+      tags: [admin-content]
+      summary: Update page
+      operationId: updatePage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PageWrite'
+      responses:
+        '200':
+          description: Updated page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+    delete:
+      tags: [admin-content]
+      summary: Delete page
+      operationId: deletePage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/doc-categories:
+    get:
+      tags: [admin-content]
+      summary: List documentation categories
+      operationId: listDocCategories
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Paginated documentation categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocCategoryPageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    post:
+      tags: [admin-content]
+      summary: Create documentation category
+      operationId: createDocCategory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocCategoryWrite'
+      responses:
+        '201':
+          description: Created documentation category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocCategorySuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/doc-categories/{id}:
+    patch:
+      tags: [admin-content]
+      summary: Update documentation category
+      operationId: updateDocCategory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocCategoryWrite'
+      responses:
+        '200':
+          description: Updated documentation category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocCategorySuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+    delete:
+      tags: [admin-content]
+      summary: Delete documentation category
+      operationId: deleteDocCategory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/doc-articles:
+    get:
+      tags: [admin-content]
+      summary: List documentation articles
+      operationId: listDocArticles
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Paginated documentation articles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocArticlePageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    post:
+      tags: [admin-content]
+      summary: Create documentation article
+      operationId: createDocArticle
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocArticleWrite'
+      responses:
+        '201':
+          description: Created documentation article
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocArticleSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/doc-articles/{id}:
+    get:
+      tags: [admin-content]
+      summary: Read documentation article (all languages)
+      operationId: getDocArticle
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Article with all translations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocArticleSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    patch:
+      tags: [admin-content]
+      summary: Update documentation article
+      operationId: updateDocArticle
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocArticleWrite'
+      responses:
+        '200':
+          description: Updated documentation article
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocArticleSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+    delete:
+      tags: [admin-content]
+      summary: Delete documentation article
+      operationId: deleteDocArticle
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/contact-submissions:
+    get:
+      tags: [admin-content]
+      summary: List contact submissions
+      operationId: listContactSubmissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - name: status
+          in: query
+          required: false
+          description: Filter by inbox status
+          schema:
+            type: string
+            enum: [new, read, handled]
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Paginated contact submissions, newest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSubmissionPageSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+  /api/v1/admin/contact-submissions/{id}:
+    get:
+      tags: [admin-content]
+      summary: Read one contact submission
+      operationId: getContactSubmission
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Contact submission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSubmissionSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    patch:
+      tags: [admin-content]
+      summary: Update a contact submission status
+      description: Only the status field is accepted and changed.
+      operationId: updateContactSubmissionStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactStatusWrite'
+      responses:
+        '200':
+          description: Updated contact submission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSubmissionSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/media:
+    get:
+      tags: [admin-content]
+      summary: List media assets
+      operationId: listMedia
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Paginated media assets, newest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetPageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    post:
+      tags: [admin-content]
+      summary: Upload a media asset
+      description: multipart/form-data field `file`; png/jpeg/webp/svg/gif up to 5MB.
+      operationId: uploadMedia
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Uploaded media asset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/media/{id}:
+    delete:
+      tags: [admin-content]
+      summary: Delete a media asset
+      operationId: deleteMedia
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
 components:
   securitySchemes:
     bearerAuth:
@@ -1467,6 +2930,35 @@ components:
       schema:
         type: string
         pattern: '^[0-9]+$'
+    Locale:
+      name: locale
+      in: query
+      required: false
+      description: Requested locale; unknown or disabled values fall back to the default locale.
+      schema:
+        type: string
+    Placement:
+      name: placement
+      in: query
+      required: false
+      description: Navigation placement filter (defaults to header).
+      schema:
+        type: string
+        enum: [header, footer]
+    Slug:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    MediaFilename:
+      name: filename
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
   headers:
     RequestID:
       description: Echoed or generated request ID
@@ -1831,7 +3323,7 @@ components:
     # ---- business-user platform schemas ----
     PublicSettings:
       type: object
-      required: [platform_name, public_frontend_url, public_api_url, registration_enabled, username_login_enabled, email_login_enabled, email_verification_required, default_avatar_url]
+      required: [platform_name, public_frontend_url, public_api_url, registration_enabled, username_login_enabled, email_login_enabled, email_verification_required, default_avatar_url, site_name, logo_url, logo_dark_url, favicon_url, tagline, footer_text, icp_record, contact_email, contact_phone, contact_address, social_links, seo_default_title, seo_default_description, seo_default_og_image_url, default_locale, locales]
       properties:
         platform_name: { type: string }
         public_frontend_url: { type: string, format: uri }
@@ -1841,6 +3333,28 @@ components:
         email_login_enabled: { type: boolean }
         email_verification_required: { type: boolean }
         default_avatar_url: { type: string }
+        site_name: { type: string }
+        logo_url: { type: string }
+        logo_dark_url: { type: string }
+        favicon_url: { type: string }
+        tagline: { type: string }
+        footer_text: { type: string }
+        icp_record: { type: string }
+        contact_email: { type: string }
+        contact_phone: { type: string }
+        contact_address: { type: string }
+        social_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/SocialLink'
+        seo_default_title: { type: string }
+        seo_default_description: { type: string }
+        seo_default_og_image_url: { type: string }
+        default_locale: { type: string }
+        locales:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocaleOption'
       additionalProperties: false
     PublicSettingsSuccess:
       allOf:
@@ -2097,3 +3611,830 @@ components:
             code: { enum: [40013] }
             message: { enum: [settings conflict] }
             data: { type: object, additionalProperties: false }
+    # ---- site content schemas ----
+    SocialLink:
+      type: object
+      required: [platform, url]
+      properties:
+        platform: { type: string }
+        url: { type: string }
+      additionalProperties: false
+    LocaleOption:
+      type: object
+      required: [code, label]
+      properties:
+        code: { type: string }
+        label: { type: string }
+      additionalProperties: false
+    PublicNavigationItem:
+      type: object
+      required: [id, label, url, target, sort_order, children]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        url: { type: string }
+        target: { type: string, enum: ['_self', '_blank'] }
+        sort_order: { type: integer }
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicNavigationItem'
+    PublicNavigation:
+      type: object
+      required: [locale, items]
+      properties:
+        locale: { type: string }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicNavigationItem'
+    PublicNavigationSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/PublicNavigation'
+    PublicHomeSection:
+      type: object
+      required: [id, type, sort_order, data]
+      properties:
+        id: { type: string }
+        type: { type: string, description: "Known types: hero, features, screenshot, stats, cta; unknown types must be ignored by the client." }
+        sort_order: { type: integer }
+        data: { type: object, additionalProperties: true }
+    PublicHome:
+      type: object
+      required: [locale, sections]
+      properties:
+        locale: { type: string }
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicHomeSection'
+    PublicHomeSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/PublicHome'
+    PublicFeature:
+      type: object
+      required: [id, icon, title, summary, body_md, image_url, sort_order]
+      properties:
+        id: { type: string }
+        icon: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        body_md: { type: string, description: "Server-sanitized Markdown" }
+        image_url: { type: string }
+        sort_order: { type: integer }
+    PublicFeatures:
+      type: object
+      required: [locale, items]
+      properties:
+        locale: { type: string }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicFeature'
+    PublicFeaturesSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/PublicFeatures'
+    PublicPlan:
+      type: object
+      required: [id, code, name, description, monthly_price, yearly_price, currency, highlighted, cta_label, cta_url, features, sort_order]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        name: { type: string }
+        description: { type: string }
+        monthly_price: { type: string, description: "Two-decimal amount string" }
+        yearly_price: { type: string }
+        currency: { type: string }
+        highlighted: { type: boolean }
+        cta_label: { type: string }
+        cta_url: { type: string }
+        features: { type: array, items: { type: string } }
+        sort_order: { type: integer }
+    PublicPricing:
+      type: object
+      required: [locale, currency, plans]
+      properties:
+        locale: { type: string }
+        currency: { type: string }
+        plans:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicPlan'
+    PublicPricingSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/PublicPricing'
+    PublicPageSummary:
+      type: object
+      required: [slug, title, updated_at]
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        updated_at: { type: string, format: date-time }
+    PublicPageList:
+      type: object
+      required: [locale, items]
+      properties:
+        locale: { type: string }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicPageSummary'
+    PublicPageListSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/PublicPageList'
+    PublicPage:
+      type: object
+      required: [locale, slug, title, body_md, seo_title, seo_description, updated_at]
+      properties:
+        locale: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        body_md: { type: string, description: "Server-sanitized Markdown" }
+        seo_title: { type: string }
+        seo_description: { type: string }
+        updated_at: { type: string, format: date-time }
+    PublicPageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/PublicPage'
+    PublicDocArticleSummary:
+      type: object
+      required: [id, slug, title, sort_order, updated_at]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        sort_order: { type: integer }
+        updated_at: { type: string, format: date-time }
+    PublicDocCategory:
+      type: object
+      required: [id, slug, name, sort_order, articles]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        name: { type: string }
+        sort_order: { type: integer }
+        articles:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicDocArticleSummary'
+    PublicDocs:
+      type: object
+      required: [locale, categories]
+      properties:
+        locale: { type: string }
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicDocCategory'
+    PublicDocsSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/PublicDocs'
+    PublicDocCategoryRef:
+      type: object
+      required: [id, slug, name]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        name: { type: string }
+    PublicDocRef:
+      type: object
+      required: [slug, title]
+      properties:
+        slug: { type: string }
+        title: { type: string }
+    PublicDocArticle:
+      type: object
+      required: [locale, id, slug, title, body_md, category, prev, next, seo_title, seo_description, updated_at]
+      properties:
+        locale: { type: string }
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        body_md: { type: string, description: "Server-sanitized Markdown" }
+        category:
+          $ref: '#/components/schemas/PublicDocCategoryRef'
+        prev:
+          allOf:
+            - $ref: '#/components/schemas/PublicDocRef'
+          nullable: true
+        next:
+          allOf:
+            - $ref: '#/components/schemas/PublicDocRef'
+          nullable: true
+        seo_title: { type: string }
+        seo_description: { type: string }
+        updated_at: { type: string, format: date-time }
+    PublicDocSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/PublicDocArticle'
+    SiteSettingsTranslation:
+      type: object
+      properties:
+        tagline: { type: string }
+        footer_text: { type: string }
+        seo_default_title: { type: string }
+        seo_default_description: { type: string }
+        icp_record: { type: string }
+      additionalProperties: false
+    SiteSettings:
+      type: object
+      required: [site_name, logo_url, logo_dark_url, favicon_url, contact_email, contact_phone, contact_address, social_links, seo_default_og_image_url, default_locale, translations, version, updated_by, updated_at]
+      properties:
+        site_name: { type: string }
+        logo_url: { type: string }
+        logo_dark_url: { type: string }
+        favicon_url: { type: string }
+        contact_email: { type: string }
+        contact_phone: { type: string }
+        contact_address: { type: string }
+        social_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/SocialLink'
+        seo_default_og_image_url: { type: string }
+        default_locale: { type: string }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SiteSettingsTranslation'
+        version: { type: integer }
+        updated_by: { type: string }
+        updated_at: { type: string, format: date-time }
+    SiteSettingsSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/SiteSettings'
+    SiteSettingsWrite:
+      type: object
+      required: [site_name, default_locale, version]
+      properties:
+        site_name: { type: string, minLength: 1 }
+        logo_url: { type: string }
+        logo_dark_url: { type: string }
+        favicon_url: { type: string }
+        contact_email: { type: string }
+        contact_phone: { type: string }
+        contact_address: { type: string }
+        social_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/SocialLink'
+        seo_default_og_image_url: { type: string }
+        default_locale: { type: string, description: "Must be an enabled locale" }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SiteSettingsTranslation'
+        version: { type: integer, minimum: 1 }
+    NavigationTranslation:
+      type: object
+      properties:
+        label: { type: string }
+      additionalProperties: false
+    NavigationItem:
+      type: object
+      required: [id, placement, parent_id, url, target, sort_order, visible, translations, created_at, updated_at]
+      properties:
+        id: { type: string }
+        placement: { type: string, enum: [header, footer] }
+        parent_id: { type: string, nullable: true }
+        url: { type: string }
+        target: { type: string, enum: ['_self', '_blank'] }
+        sort_order: { type: integer }
+        visible: { type: boolean }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/NavigationTranslation'
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    NavigationItemSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/NavigationItem'
+    NavigationItemPageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/NavigationItem'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+    NavigationItemWrite:
+      type: object
+      properties:
+        placement: { type: string, enum: [header, footer] }
+        parent_id: { type: string, nullable: true, description: "Absent keeps the current parent; empty string clears it" }
+        url: { type: string }
+        target: { type: string, enum: ['_self', '_blank'] }
+        sort_order: { type: integer }
+        visible: { type: boolean }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/NavigationTranslation'
+    HomeSection:
+      type: object
+      required: [id, type, sort_order, published, data, translations, created_at, updated_at]
+      properties:
+        id: { type: string }
+        type: { type: string }
+        sort_order: { type: integer }
+        published: { type: boolean }
+        data: { type: object, additionalProperties: true, description: "Non-translatable base data merged under each locale" }
+        translations:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    HomeSectionSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/HomeSection'
+    HomeSectionPageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/HomeSection'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+    HomeSectionWrite:
+      type: object
+      properties:
+        type: { type: string, minLength: 1 }
+        sort_order: { type: integer }
+        published: { type: boolean }
+        data: { type: object, additionalProperties: true }
+        translations:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+    FeatureTranslation:
+      type: object
+      properties:
+        title: { type: string }
+        summary: { type: string }
+        body_md: { type: string, description: "Server-sanitized Markdown" }
+        image_url: { type: string }
+      additionalProperties: false
+    Feature:
+      type: object
+      required: [id, icon, sort_order, published, translations, created_at, updated_at]
+      properties:
+        id: { type: string }
+        icon: { type: string }
+        sort_order: { type: integer }
+        published: { type: boolean }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FeatureTranslation'
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    FeatureSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/Feature'
+    FeaturePageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Feature'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+    FeatureWrite:
+      type: object
+      properties:
+        icon: { type: string }
+        sort_order: { type: integer }
+        published: { type: boolean }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FeatureTranslation'
+    PricingPlanTranslation:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+        cta_label: { type: string }
+        cta_url: { type: string }
+      additionalProperties: false
+    PricingPlan:
+      type: object
+      required: [id, code, monthly_price, yearly_price, currency, highlighted, sort_order, visible, translations, features, created_at, updated_at]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        monthly_price: { type: string }
+        yearly_price: { type: string }
+        currency: { type: string }
+        highlighted: { type: boolean }
+        sort_order: { type: integer }
+        visible: { type: boolean }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PricingPlanTranslation'
+        features:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    PricingPlanSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/PricingPlan'
+    PricingPlanPageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/PricingPlan'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+    PricingPlanWrite:
+      type: object
+      properties:
+        code: { type: string }
+        monthly_price: { type: string }
+        yearly_price: { type: string }
+        currency: { type: string }
+        highlighted: { type: boolean }
+        sort_order: { type: integer }
+        visible: { type: boolean }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PricingPlanTranslation'
+        features:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+    PageTranslation:
+      type: object
+      properties:
+        title: { type: string }
+        body_md: { type: string, description: "Server-sanitized Markdown" }
+        seo_title: { type: string }
+        seo_description: { type: string }
+      additionalProperties: false
+    Page:
+      type: object
+      required: [id, slug, published, sort_order, translations, created_at, updated_at]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        published: { type: boolean }
+        sort_order: { type: integer }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PageTranslation'
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    PageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/Page'
+    PageListSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Page'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+    PageWrite:
+      type: object
+      properties:
+        slug: { type: string }
+        published: { type: boolean }
+        sort_order: { type: integer }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PageTranslation'
+    DocCategoryName:
+      type: object
+      properties:
+        name: { type: string }
+      additionalProperties: false
+    DocCategory:
+      type: object
+      required: [id, slug, sort_order, translations, created_at, updated_at]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        sort_order: { type: integer }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/DocCategoryName'
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    DocCategorySuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/DocCategory'
+    DocCategoryPageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DocCategory'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+    DocCategoryWrite:
+      type: object
+      properties:
+        slug: { type: string }
+        sort_order: { type: integer }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/DocCategoryName'
+    DocArticleTranslation:
+      type: object
+      properties:
+        title: { type: string }
+        body_md: { type: string, description: "Server-sanitized Markdown" }
+        seo_title: { type: string }
+        seo_description: { type: string }
+      additionalProperties: false
+    DocArticle:
+      type: object
+      required: [id, slug, category_id, sort_order, published, translations, created_at, updated_at]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        category_id: { type: string }
+        sort_order: { type: integer }
+        published: { type: boolean }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/DocArticleTranslation'
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    DocArticleSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/DocArticle'
+    DocArticlePageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DocArticle'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+    DocArticleWrite:
+      type: object
+      properties:
+        slug: { type: string }
+        category_id: { type: string, pattern: '^[0-9]+$' }
+        sort_order: { type: integer }
+        published: { type: boolean }
+        translations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/DocArticleTranslation'
+    ContactReceipt:
+      type: object
+      required: [id, submitted_at]
+      properties:
+        id: { type: string }
+        submitted_at: { type: string, format: date-time }
+    ContactReceiptSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/ContactReceipt'
+    ContactSubmission:
+      type: object
+      required: [id, name, email, company, message, locale, status, source_ip, user_agent, created_at, updated_at]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        company: { type: string }
+        message: { type: string }
+        locale: { type: string }
+        status: { type: string, enum: [new, read, handled] }
+        source_ip: { type: string }
+        user_agent: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ContactSubmissionSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/ContactSubmission'
+    ContactSubmissionPageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ContactSubmission'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+    ContactStatusWrite:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [new, read, handled] }
+      additionalProperties: false
+    MediaAsset:
+      type: object
+      required: [id, url, mime, size, width, height]
+      properties:
+        id: { type: string }
+        url: { type: string }
+        mime: { type: string }
+        size: { type: integer }
+        width: { type: integer }
+        height: { type: integer }
+    MediaAssetSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/MediaAsset'
+    MediaAssetPageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/MediaAsset'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }

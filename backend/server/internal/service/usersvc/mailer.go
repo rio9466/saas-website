@@ -52,26 +52,35 @@ func userVerifyKey(suffix string) string {
 // must fail closed: the caller returns a 503 instead of risking a token that
 // cannot be validated.
 func (s *Service) storeVerificationToken(ctx context.Context, userID int64, tokenHash string) error {
+	return s.storeOneTimeToken(ctx, userVerifyKey(idString(userID)), tokenHash, time.Duration(s.verifyTTL))
+}
+
+// storeOneTimeToken persists a hashed one-time token under an explicit key and
+// TTL. A failure here must fail closed.
+func (s *Service) storeOneTimeToken(ctx context.Context, key, tokenHash string, ttl time.Duration) error {
 	if s.sessions == nil {
 		return ErrVerificationInvalid
 	}
-	ttl := time.Duration(s.verifyTTL)
-	if err := s.sessions.Raw().Set(ctx, userVerifyKey(idString(userID)), tokenHash, ttl).Err(); err != nil {
-		return fmt.Errorf("store verification token: %w", err)
+	if err := s.sessions.Raw().Set(ctx, key, tokenHash, ttl).Err(); err != nil {
+		return fmt.Errorf("store one-time token: %w", err)
 	}
 	return nil
 }
 
-// takeVerificationToken atomically consumes a token (one-time use). A Lua
-// script compares the stored hash and deletes only on an exact match, so a
-// wrong or replayed token is rejected without burning the still-valid one.
-// Returns (false, nil) when no token is stored or the hashes differ; Redis
-// errors fail closed.
+// takeVerificationToken atomically consumes a token (one-time use).
 func (s *Service) takeVerificationToken(ctx context.Context, userID int64, token string) (bool, error) {
+	return s.takeOneTimeToken(ctx, userVerifyKey(idString(userID)), token)
+}
+
+// takeOneTimeToken atomically consumes a token (one-time use). A Lua script
+// compares the stored hash and deletes only on an exact match, so a wrong or
+// replayed token is rejected without burning the still-valid one. Returns
+// (false, nil) when no token is stored or the hashes differ; Redis errors fail
+// closed.
+func (s *Service) takeOneTimeToken(ctx context.Context, key, token string) (bool, error) {
 	if s.sessions == nil {
 		return false, ErrVerificationInvalid
 	}
-	key := userVerifyKey(idString(userID))
 	expected := hashVerificationToken(token)
 	script := goredis.NewScript(`
 local v = redis.call('GET', KEYS[1])
@@ -86,7 +95,7 @@ return 2
 `)
 	res, err := script.Run(ctx, s.sessions.Raw(), []string{key}, expected).Int64()
 	if err != nil {
-		return false, fmt.Errorf("redeem verification token: %w", err)
+		return false, fmt.Errorf("redeem one-time token: %w", err)
 	}
 	return res == 1, nil
 }
@@ -96,10 +105,16 @@ return 2
 // appears. The mailer is constructed per send so settings rotation takes
 // effect immediately.
 func (s *Service) sendVerificationEmail(ctx context.Context, settings *userdomain.SystemSettings, toEmail, token string) error {
-	link := s.verificationLink(settings.PublicFrontendURL, token)
+	link := s.verificationLink(settings.PublicFrontendURL, toEmail, token)
 	subject := fmt.Sprintf("%s: verify your email address", settings.PlatformName)
 	body := verificationEmailBody(settings.PlatformName, link, s.verifyTTL)
+	return s.sendSystemEmail(ctx, settings, toEmail, subject, body)
+}
 
+// sendSystemEmail builds the mailer from live system settings and sends one
+// HTML message. Failures are sanitized; the SMTP password never appears. The
+// mailer is constructed per send so settings rotation takes effect immediately.
+func (s *Service) sendSystemEmail(ctx context.Context, settings *userdomain.SystemSettings, toEmail, subject, body string) error {
 	plain, err := s.storedSMTPPassword(ctx, settings)
 	if err != nil {
 		return err
@@ -142,7 +157,13 @@ func (s *Service) storedSMTPPassword(ctx context.Context, settings *userdomain.S
 	return plain, nil
 }
 
-func (s *Service) verificationLink(frontendURL, token string) string {
+func (s *Service) verificationLink(frontendURL, email, token string) string {
+	return s.frontendLink(frontendURL, "/verify-email", email, token)
+}
+
+// frontendLink builds an absolute, self-contained frontend route carrying both
+// the recipient email and the one-time token so the link works from any device.
+func (s *Service) frontendLink(frontendURL, route, email, token string) string {
 	base := strings.TrimRight(strings.TrimSpace(frontendURL), "/")
 	if base == "" {
 		base = "/"
@@ -151,8 +172,9 @@ func (s *Service) verificationLink(frontendURL, token string) string {
 	if err != nil {
 		return base
 	}
-	u.Path = strings.TrimRight(u.Path, "/") + "/verify-email"
+	u.Path = strings.TrimRight(u.Path, "/") + route
 	q := u.Query()
+	q.Set("email", strings.TrimSpace(strings.ToLower(email)))
 	q.Set("token", token)
 	u.RawQuery = q.Encode()
 	return u.String()
