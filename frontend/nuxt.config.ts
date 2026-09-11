@@ -44,8 +44,10 @@ export default defineNuxtConfig({
     // a rebuild; the middleware keeps dev and production behaviour identical.
 
     // Public content pages are cached (ISR-style) for the same window as the
-    // backend `Cache-Control: max-age=60` (contract §7.4).
-    '/': { swr: 60 },
+    // backend `Cache-Control: max-age=60` (contract §7.4). The root is exempt:
+    // the SWR handler strips request headers from the SSR render event, so the
+    // i18n cookie/Accept-Language detection cannot run there and a cached root
+    // response would leak one visitor's language (and `Set-Cookie`) to others.
     '/features': { swr: 60 },
     '/pricing': { swr: 60 },
     '/contact': { swr: 60 },
@@ -82,7 +84,15 @@ export default defineNuxtConfig({
     langDir: 'locales',
     strategy: 'prefix_except_default',
     defaultLocale: 'en',
-    detectBrowserLanguage: false,
+    // Remember the visitor's language between visits. The module reads this
+    // cookie during SSR, so a returning visitor to `/` is rendered (or
+    // redirected) in their language without a client-side flash. Prefixed URLs
+    // such as `/zh-CN/...` still win because detection only runs on `/`.
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_redirected',
+      redirectOn: 'root'
+    },
     locales: [
       { code: 'en', language: 'en-US', file: 'en.json' },
       { code: 'zh-CN', language: 'zh-CN', file: 'zh-CN.json' }

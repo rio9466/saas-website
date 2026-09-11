@@ -1,13 +1,22 @@
 <script setup lang="ts">
-const { t, locale } = useI18n()
-const switchLocalePath = useSwitchLocalePath()
+const { t, locale, setLocale } = useI18n()
 const { enabledLocales } = useSiteSettings()
-type LocaleCode = Parameters<typeof switchLocalePath>[0]
+type LocaleCode = Parameters<typeof setLocale>[0]
+
+async function switchTo(code: LocaleCode) {
+  if (code === locale.value) {
+    return
+  }
+  // `setLocale` swaps the locale and rewrites the current route in the target
+  // language; the module also persists the choice to the `i18n_redirected`
+  // cookie. Using it instead of a `to` link avoids NuxtLink re-localizing the
+  // already-switched path (which kept the user on the current locale).
+  await setLocale(code)
+}
 
 const items = computed(() => enabledLocales.value.map(entry => ({
   label: entry.label,
-  to: switchLocalePath(entry.code as LocaleCode) || '/',
-  icon: entry.code === locale.value ? 'i-lucide-check' : undefined
+  onSelect: () => switchTo(entry.code as LocaleCode)
 })))
 
 const currentLabel = computed(
