@@ -12,4 +12,7 @@
 - `master-relay` is the AI integration branch and the default base for all AI work. Do not commit directly to `master`.
 - Never merge into `master` unless the user explicitly agrees first.
 - All branch merges happen on `master-relay`. Branch feature work off `master-relay` and merge back into `master-relay`.
-- Use git worktrees. This repo's `master-relay` worktree lives at `../saas-website.worktrees/master-relay`, a sibling of the repo root; the repo root checkout stays on `master`.
+- Long-lived development branches, both based on `master-relay`:
+  - `frontend-dev` — frontend development.
+  - `backend-dev` — backend development, including the backend admin system.
+- Use git worktrees. `master-relay` lives at `../saas-website.worktrees/master-relay` (sibling of the repo root); `frontend-dev` and `backend-dev` are Orca-managed worktrees under `../../workspaces/saas-website/`. The repo root checkout stays on `master`.
