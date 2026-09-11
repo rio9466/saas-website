@@ -8,7 +8,9 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@nuxt/ui',
-    '@nuxtjs/i18n'
+    '@nuxtjs/i18n',
+    '@pinia/nuxt',
+    'pinia-plugin-persistedstate/nuxt'
   ],
 
   devtools: {
@@ -27,6 +29,17 @@ export default defineNuxtConfig({
   },
 
   css: ['~/assets/css/main.css'],
+
+  // Persist the colour mode in a cookie so SSR can render the correct theme on
+  // the first paint (no light/dark flash). `app/stores/preferences.ts` records
+  // the same choice for the startup plugin.
+  colorMode: {
+    preference: 'system',
+    fallback: 'light',
+    storage: 'cookie',
+    storageKey: 'nuxt-color-mode',
+    classSuffix: ''
+  },
 
   runtimeConfig: {
     apiProxyTarget,
@@ -109,5 +122,12 @@ export default defineNuxtConfig({
       scan: true,
       sizeLimitKb: 512
     }
+  },
+
+  // User preferences (locale, colour mode) are persisted to `saas-preferences`
+  // by `app/stores/preferences.ts`. `stores/` is relative to the Nuxt 4 app
+  // directory (`app/`), so the glob is `stores/**`, not `app/stores/**`.
+  pinia: {
+    storesDirs: ['stores/**']
   }
 })

@@ -3,6 +3,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { resetPassword } = useAuth()
+const localePath = useLocalePath()
 
 const email = computed(() => String(route.query.email || '').trim())
 const token = computed(() => String(route.query.token || '').trim())
@@ -39,7 +40,7 @@ async function submit() {
   submitting.value = true
   try {
     await resetPassword(email.value, token.value, form.password)
-    await router.push({ path: '/login', query: { reset: '1' } })
+    await router.push({ path: localePath('/login'), query: { reset: '1' } })
   } catch (error) {
     formError.value = error instanceof ApiError
       ? (error.code === 40016 ? t('auth.reset.invalidDescription') : t(apiErrorKey(error.code)))
@@ -70,7 +71,7 @@ useSeo({ title: t('auth.reset.title'), description: t('auth.reset.subtitle') })
     >
       <template #actions>
         <UButton
-          to="/forgot-password"
+          :to="localePath('/forgot-password')"
           color="primary"
           variant="soft"
         >

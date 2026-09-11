@@ -8,6 +8,7 @@ const props = defineProps<{
 }>()
 
 const { t, locale } = useI18n()
+const localizedUrl = useLocalizedUrl()
 
 const rawPrice = computed(() => (props.period === 'yearly' ? props.plan.yearly_price : props.plan.monthly_price))
 
@@ -84,7 +85,7 @@ const periodLabel = computed(() => (props.period === 'yearly' ? t('pricing.perYe
 
     <UButton
       v-if="plan.cta_url || plan.cta_label"
-      :to="plan.cta_url || '/contact'"
+      :to="localizedUrl(plan.cta_url || '/contact')"
       :color="plan.highlighted ? 'primary' : 'neutral'"
       :variant="plan.highlighted ? 'solid' : 'outline'"
       block

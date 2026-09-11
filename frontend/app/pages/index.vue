@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
+const localePath = useLocalePath()
 
 const { data: homeData } = await useHomeContent()
 const { data: featuresData } = await useFeaturesContent()
@@ -37,13 +38,13 @@ useSeo()
       </p>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
         <UButton
-          to="/register"
+          :to="localePath('/register')"
           size="lg"
         >
           {{ t('home.fallbackPrimary') }}
         </UButton>
         <UButton
-          to="/contact"
+          :to="localePath('/contact')"
           size="lg"
           color="neutral"
           variant="outline"

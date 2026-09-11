@@ -3,6 +3,8 @@ const { t } = useI18n()
 const { settings } = useSiteSettings()
 const navItems = useNavigation('header')
 const { isAuthenticated, user } = useAuth()
+const localePath = useLocalePath()
+const localizedUrl = useLocalizedUrl()
 
 function targetOf(target: string) {
   return target || '_self'
@@ -12,11 +14,11 @@ function targetOf(target: string) {
 <template>
   <UHeader
     :title="settings.site_name"
-    to="/"
+    :to="localePath('/')"
     mode="slideover"
   >
     <template #left>
-      <NuxtLink
+      <AppLink
         to="/"
         :aria-label="settings.site_name"
         class="flex items-center"
@@ -26,14 +28,14 @@ function targetOf(target: string) {
           :logo="settings.logo_url"
           :logo-dark="settings.logo_dark_url"
         />
-      </NuxtLink>
+      </AppLink>
     </template>
 
     <nav class="hidden lg:flex items-center gap-1">
       <UButton
         v-for="item in navItems"
         :key="item.id"
-        :to="item.url"
+        :to="localizedUrl(item.url)"
         :target="targetOf(item.target)"
         color="neutral"
         variant="ghost"
@@ -45,10 +47,10 @@ function targetOf(target: string) {
 
     <template #right>
       <LocaleSwitcher />
-      <UColorModeButton :aria-label="t('header.toggleTheme')" />
+      <ThemeToggle />
       <UButton
         v-if="isAuthenticated"
-        to="/account"
+        :to="localePath('/account')"
         color="neutral"
         variant="ghost"
         size="sm"
@@ -58,7 +60,7 @@ function targetOf(target: string) {
       </UButton>
       <template v-else>
         <UButton
-          to="/login"
+          :to="localePath('/login')"
           color="neutral"
           variant="ghost"
           size="sm"
@@ -66,7 +68,7 @@ function targetOf(target: string) {
           {{ t('header.login') }}
         </UButton>
         <UButton
-          to="/register"
+          :to="localePath('/register')"
           color="primary"
           size="sm"
         >
@@ -91,7 +93,7 @@ function targetOf(target: string) {
         <UButton
           v-for="item in navItems"
           :key="item.id"
-          :to="item.url"
+          :to="localizedUrl(item.url)"
           :target="targetOf(item.target)"
           color="neutral"
           variant="ghost"

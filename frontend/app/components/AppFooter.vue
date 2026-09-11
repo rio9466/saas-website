@@ -2,6 +2,7 @@
 const { t } = useI18n()
 const { settings } = useSiteSettings()
 const navItems = useNavigation('footer')
+const localizedUrl = useLocalizedUrl()
 
 const year = new Date().getFullYear()
 
@@ -47,7 +48,7 @@ function targetOf(target: string) {
       class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2"
       :aria-label="t('footer.navigation')"
     >
-      <NuxtLink
+      <AppLink
         v-for="item in navItems"
         :key="item.id"
         :to="item.url"
@@ -55,7 +56,7 @@ function targetOf(target: string) {
         class="text-sm text-muted hover:text-highlighted"
       >
         {{ item.label }}
-      </NuxtLink>
+      </AppLink>
     </nav>
 
     <template #right>
@@ -80,7 +81,7 @@ function targetOf(target: string) {
           <UButton
             v-for="link in settings.social_links"
             :key="link.platform"
-            :to="link.url"
+            :to="localizedUrl(link.url)"
             target="_blank"
             rel="noopener noreferrer"
             color="neutral"

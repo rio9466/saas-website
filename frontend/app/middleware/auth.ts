@@ -12,6 +12,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   const { isAuthenticated, restoreSession } = useAuth()
+  const localePath = useLocalePath()
   if (isAuthenticated.value) {
     return
   }
@@ -23,7 +24,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const restored = await restoreSession()
   if (!restored) {
     return navigateTo(
-      { path: '/login', query: { redirect: to.fullPath } },
+      { path: localePath('/login'), query: { redirect: to.fullPath } },
       { replace: true }
     )
   }

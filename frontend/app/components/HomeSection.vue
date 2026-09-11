@@ -21,13 +21,14 @@ function entryText(entry: Record<string, unknown>, key: string): string {
   return typeof value === 'string' ? value : ''
 }
 
+const localizedUrl = useLocalizedUrl()
 const title = computed(() => text('title'))
 const subtitle = computed(() => text('subtitle') || text('description') || text('body'))
 const image = computed(() => text('image_url') || text('image'))
 const primaryLabel = computed(() => text('primary_cta_label') || text('cta_label'))
-const primaryUrl = computed(() => text('primary_cta_url') || text('cta_url') || '/register')
+const primaryUrl = computed(() => localizedUrl(text('primary_cta_url') || text('cta_url') || '/register'))
 const secondaryLabel = computed(() => text('secondary_cta_label'))
-const secondaryUrl = computed(() => text('secondary_cta_url') || '/contact')
+const secondaryUrl = computed(() => localizedUrl(text('secondary_cta_url') || '/contact'))
 const stats = computed(() => array('items').length ? array('items') : array('stats'))
 </script>
 
