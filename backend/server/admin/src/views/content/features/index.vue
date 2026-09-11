@@ -28,7 +28,7 @@ const query = reactive({ page: 1, page_size: 20 });
 const translationFields: TranslationFieldDef[] = [
   { key: "title", label: "标题" },
   { key: "summary", label: "摘要", type: "textarea", rows: 3 },
-  { key: "body_md", label: "正文（Markdown）", type: "textarea", rows: 8 },
+  { key: "body_md", label: "正文（Markdown）", type: "markdown" },
   {
     key: "image_url",
     label: "配图",
@@ -250,13 +250,11 @@ onMounted(async () => {
         <el-form-item label="发布">
           <el-switch v-model="form.published" />
         </el-form-item>
-        <el-form-item label="多语言内容">
-          <LocaleTranslationTabs
-            v-model:translations="form.translations"
-            :locales="locales"
-            :fields="translationFields"
-          />
-        </el-form-item>
+        <LocaleTranslationTabs
+          v-model:translations="form.translations"
+          :locales="locales"
+          :fields="translationFields"
+        />
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>

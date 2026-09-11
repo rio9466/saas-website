@@ -3,6 +3,7 @@
 export type TranslationFieldType =
   | "input"
   | "textarea"
+  | "markdown"
   | "string-list"
   | "json"
   | "kv-list"

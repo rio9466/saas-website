@@ -366,14 +366,12 @@ onMounted(async () => {
           />
         </el-form-item>
 
-        <el-form-item label="多语言内容">
-          <LocaleTranslationTabs
-            v-model:translations="form.translations"
-            :locales="locales"
-            :fields="translationFields"
-            :raw-json="!isKnownType"
-          />
-        </el-form-item>
+        <LocaleTranslationTabs
+          v-model:translations="form.translations"
+          :locales="locales"
+          :fields="translationFields"
+          :raw-json="!isKnownType"
+        />
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
