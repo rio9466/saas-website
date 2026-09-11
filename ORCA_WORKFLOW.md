@@ -28,10 +28,54 @@ Rules:
 
 ## 2. Roles
 
-- **Orchestrator ("master pi")** — the pi agent in the `master-relay` worktree. Owns the
-  branch model, writes and publishes task documents, reviews and merges results.
-- **Executor pi** — a pi agent in a task worktree cut from `master-relay`. Implements exactly
-  one task document and reports evidence back.
+Three pi roles, each pinned to a branch:
+
+| Role                | Home branch          | Owns                                                                                     |
+| ------------------- | -------------------- | ---------------------------------------------------------------------------------------- |
+| **Conversation pi** | `master` (main checkout) | Dialogue with the user, workflow guidance, acceptance review, `master` merges, releases  |
+| **Orchestrator pi** | `master-relay`       | PRD / task documents, the status ledger, task worktrees, merges into `master-relay`      |
+| **Executor pi**     | `<task>`             | Implementing exactly one task document; reporting evidence back                          |
+
+### Conversation pi (`master`, main checkout)
+
+This is the agent the user talks to. It does not build the product; it keeps the process
+honest.
+
+Responsibilities:
+
+- **Dialogue and decisions** — clarify requirements, resolve ambiguity, capture product and
+  process decisions. Surface tradeoffs instead of guessing.
+- **Workflow guidance** — tell the user which branch to open, which task is ready (respecting
+  dependencies), and hand over a ready-to-paste executor prompt.
+- **Acceptance review** — independently verify executor evidence (commands + results) against
+  the task's acceptance criteria and the PRD. Approve or send back with concrete feedback; no
+  rubber-stamping.
+- **Merge and release governance** — it is the only role allowed to merge `master-relay` into
+  `master`, and only with the user's explicit approval each time. Tag releases when asked.
+- **Cross-cutting approvals** — approve changes to the PRD, ADRs, architecture, the contract,
+  and process/rule files (authored on `master-relay`).
+
+It must not:
+
+- Write business code or implement tasks.
+- Commit directly to `master` other than the approved `master-relay` merge.
+- Do an executor's work on a task branch, or bypass `master-relay`.
+- Duplicate the orchestrator's ledger bookkeeping; it verifies, the orchestrator records.
+
+It may edit process/rule documents on `master-relay` (this file, root `AGENTS.md`), but not
+business code.
+
+### Orchestrator pi (`master-relay`)
+
+The AI working branch. It turns the PRD into task documents, maintains
+`docs/tasks/STATUS.md`, creates task worktrees from `master-relay`, does the technical review,
+and merges task branches into `master-relay` with `--no-ff`. It never advances `master`.
+
+### Executor pi (`<task>`)
+
+Implements exactly one task document on its task branch, verifies with the task's commands,
+reports command + result, and never edits task docs, the contract, or other areas. It never
+merges.
 
 ## 3. Task dispatch
 
