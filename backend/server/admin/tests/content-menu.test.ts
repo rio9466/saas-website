@@ -38,7 +38,6 @@ describe("content management menu", () => {
     expect(contentMenu.name).toBe("ContentManagement");
     expect(contentMenu.meta?.title).toBe("内容管理");
     expect(contentMenu.children?.map(child => child.name)).toEqual([
-      "ContentSiteSettings",
       "ContentNavigation",
       "ContentHome",
       "ContentFeatures",
@@ -52,7 +51,6 @@ describe("content management menu", () => {
 
   it("gates content resources with admin.content.read", () => {
     for (const name of [
-      "ContentSiteSettings",
       "ContentNavigation",
       "ContentHome",
       "ContentFeatures",
