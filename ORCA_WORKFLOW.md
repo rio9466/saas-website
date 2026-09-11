@@ -56,6 +56,38 @@ Rules:
 - One agent per worktree; never run two writers on one branch.
 - Prefer a written task doc over a long inline prompt: it is reviewable and reusable.
 
+### Claiming and status
+
+A task is **assigned** when the orchestrator creates its dedicated branch/worktree from
+`master-relay`. It is **claimed** when the executor starts work on that branch. Status is
+recorded in two places:
+
+- **Durable ledger**: `docs/tasks/STATUS.md` on `master-relay`, maintained by the
+  orchestrator. Executors never edit it.
+- **Branch evidence**: the task branch's commit history. The first commit is
+  `chore(<ID>): claim task`; implementation commits use `feat(<ID>): ...` / `fix(<ID>): ...`.
+
+Status values: `todo` (assigned, unclaimed), `in-progress` (claimed), `in-review`
+(executor done, awaiting review), `done` (merged into `master-relay`), `blocked`.
+
+Claiming steps:
+
+1. Orchestrator: create the task worktree from `master-relay` and add its row to
+   `docs/tasks/STATUS.md` as `todo`.
+2. Executor: read the task doc, restate scope / assumptions / plan, and make the first commit
+   `chore(<ID>): claim task`.
+3. Executor: implement, verify with the task doc's commands, report command + result, and ask
+   for review.
+4. Orchestrator: set the ledger row to `in-review`, review, merge `--no-ff` into
+   `master-relay`, then set it to `done` with the merge commit as evidence.
+
+Rules:
+
+- Only one branch works a task ID. If a task is already `in-progress`, do not start it again.
+- Executors must not edit `docs/tasks/**` (task docs and the ledger); they report status and
+  the orchestrator records it.
+- Delete a task branch only after its task is `done`.
+
 ## 4. Documents and ownership
 
 Different documents have different owners. A branch must refuse work that belongs to another

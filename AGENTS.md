@@ -32,3 +32,10 @@
 - Never reintroduce easy-admin's git history, add it as a submodule, or re-add the original repo as a remote.
 - Area rules live in `frontend/AGENTS.md` and `backend/AGENTS.md`; the nearest layered `AGENTS.md` wins.
 - Full workflow, roles, task dispatch, and initialization paths: see `ORCA_WORKFLOW.md`.
+
+# Task claiming
+
+- Task documents live in `docs/tasks/`; their status ledger is `docs/tasks/STATUS.md`, owned by `master-relay`. Executors must not edit `docs/tasks/**`.
+- Work only on the branch named in your assigned task doc, cut from `master-relay`. Never start a task that is already `in-progress` in the ledger.
+- Claim a task by restating scope / assumptions / plan and making your first commit `chore(<ID>): claim task`. Use `feat(<ID>): ...` / `fix(<ID>): ...` for implementation commits.
+- Do not merge your task branch. Report command + result and let the orchestrator review and merge into `master-relay`.
