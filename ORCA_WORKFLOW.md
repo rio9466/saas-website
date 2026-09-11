@@ -56,6 +56,9 @@ Responsibilities:
   first.
 - **Cross-cutting approvals** — approve changes to the PRD, ADRs, architecture, the contract,
   and process/rule files (authored on `master-relay`).
+- **Persistent memory** — keep a durable, local memory of project facts, conventions, and the
+  user's preferences and habits, and read it at the start of every session (see
+  *Persistent memory and user preferences* below).
 
 It must not:
 
@@ -66,6 +69,45 @@ It must not:
 
 It may edit process/rule documents on `master-relay` (this file, root `AGENTS.md`), but not
 business code.
+
+#### Persistent memory and user preferences
+
+The conversation pi keeps durable memory across sessions in a single, **local, git-ignored**
+file at the repo root:
+
+```
+CONVERSATION_MEMORY.md
+```
+
+- It is listed in the root `.gitignore` and **must never be committed**.
+- Because it is untracked, it lives in whichever checkout the conversation pi runs in (the
+  `master` main checkout) and is not shared through git.
+
+What to keep there:
+
+- **User preferences and habits** — communication language, desired brevity, whether to
+  propose a plan before acting, when merges/releases need explicit approval, naming and port
+  conventions, review style, and any correction the user repeats.
+- **Project facts** — branch model, release baseline and tags, service ports, datastores and
+  connection details, external dependencies, environment quirks.
+- **Conventions and pitfalls** — e.g. pnpm 12 native-binary install, the backend `.gitignore`
+  `docs/` rule, the historical `/api` proxy 502, worktree paths.
+- **Lightweight decisions and rationale** — decisions too small for an ADR.
+
+When to read and write it:
+
+- Read it at the start of a session to restore context and preferences.
+- Update it the moment the user states or corrects a preference.
+- Update it at checkpoints (decisions, releases, task close-out).
+- Keep it concise: deduplicate, merge, and date entries — it is memory, not a log.
+
+Boundaries:
+
+- `CONVERSATION_MEMORY.md` is the conversation pi's own memory; the orchestrator and executors
+  do not read or write it.
+- It is not a product document: the PRD holds product requirements, `docs/tasks/STATUS.md`
+  holds the task ledger, and this memory holds the assistant's durable context and the user
+  profile.
 
 ### Orchestrator pi (`master-relay`)
 
