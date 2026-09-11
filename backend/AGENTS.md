@@ -23,5 +23,16 @@ Vendored from https://github.com/rio9466/easy-admin as plain source.
   module or build.
 - `server/docs/` is tracked even though the local `docs/` ignore pattern would hide it; keep
   it in sync with the OpenAPI contract when changing the API.
-- See the root `AGENTS.md` for coding guidelines and git workflow, and `ORCA_WORKFLOW.md`
-  for the full branch model.
+
+## Refusals (strong rules)
+
+- Must not create or edit cross-cutting documents: the PRD (`docs/prd/`), ADRs, architecture,
+  root `AGENTS.md`, or `ORCA_WORKFLOW.md`. Refuse and tell the user to open a pi terminal on
+  `master-relay` (or a docs branch cut from it).
+- Never create or edit frontend documentation or specs; that belongs to the frontend
+  workstream.
+
+## See also
+
+- Root `AGENTS.md` for coding guidelines and git rules, and `ORCA_WORKFLOW.md` for the full
+  branch model.
