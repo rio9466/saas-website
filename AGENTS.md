@@ -9,8 +9,8 @@
 
 # Roles (who does what)
 
-- **Conversation pi** — runs on `master` (this checkout). Only dialogue, workflow guidance, acceptance review, and `master-relay` → `master` merges with explicit user approval. Never writes business code and never commits to `master` otherwise. May edit process/rule docs on `master-relay`.
-- **Orchestrator pi** — runs on `master-relay`. Writes the PRD and task docs, maintains `docs/tasks/STATUS.md`, creates task branches, and merges task branches into `master-relay`.
+- **Conversation pi** — runs on `master` (this checkout). May perform any git operation across all branches with the user's explicit permission; advancing `master` always needs that approval. Never writes business code. May edit process/rule docs on `master-relay`.
+- **Orchestrator pi** — runs on `master-relay`. Scope is only `master-relay` and the task branches: writes the PRD and task docs, maintains `docs/tasks/STATUS.md`, creates task branches, and merges task branches into `master-relay`. Must never operate on `master`.
 - **Executor pi** — runs on a `<task>` branch. Implements one task, reports command + result, never merges.
 
 See `ORCA_WORKFLOW.md` §2 for the full role contract.

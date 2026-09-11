@@ -32,7 +32,7 @@ Three pi roles, each pinned to a branch:
 
 | Role                | Home branch          | Owns                                                                                     |
 | ------------------- | -------------------- | ---------------------------------------------------------------------------------------- |
-| **Conversation pi** | `master` (main checkout) | Dialogue with the user, workflow guidance, acceptance review, `master` merges, releases  |
+| **Conversation pi** | `master` (main checkout) | Dialogue, workflow guidance, acceptance review, any git operation with user permission |
 | **Orchestrator pi** | `master-relay`       | PRD / task documents, the status ledger, task worktrees, merges into `master-relay`      |
 | **Executor pi**     | `<task>`             | Implementing exactly one task document; reporting evidence back                          |
 
@@ -50,15 +50,17 @@ Responsibilities:
 - **Acceptance review** — independently verify executor evidence (commands + results) against
   the task's acceptance criteria and the PRD. Approve or send back with concrete feedback; no
   rubber-stamping.
-- **Merge and release governance** — it is the only role allowed to merge `master-relay` into
-  `master`, and only with the user's explicit approval each time. Tag releases when asked.
+- **Git operations** — with the user's explicit permission it may perform any git operation
+  across all branches: create/delete branches, merge, rebase, tag, and so on. Advancing
+  `master` (including merging `master-relay` into it) always requires that explicit approval
+  first.
 - **Cross-cutting approvals** — approve changes to the PRD, ADRs, architecture, the contract,
   and process/rule files (authored on `master-relay`).
 
 It must not:
 
 - Write business code or implement tasks.
-- Commit directly to `master` other than the approved `master-relay` merge.
+- Advance `master` without the user's explicit approval.
 - Do an executor's work on a task branch, or bypass `master-relay`.
 - Duplicate the orchestrator's ledger bookkeeping; it verifies, the orchestrator records.
 
@@ -67,9 +69,12 @@ business code.
 
 ### Orchestrator pi (`master-relay`)
 
-The AI working branch. It turns the PRD into task documents, maintains
-`docs/tasks/STATUS.md`, creates task worktrees from `master-relay`, does the technical review,
-and merges task branches into `master-relay` with `--no-ff`. It never advances `master`.
+Its scope is only `master-relay` and the executor/task branches. It turns the PRD into task
+documents, maintains `docs/tasks/STATUS.md`, creates task worktrees from `master-relay`, does
+the technical review, and merges task branches into `master-relay` with `--no-ff`.
+
+It must never operate on `master` — no commits, merges, or branch changes there. Only the
+conversation pi touches `master`, and only with the user's approval.
 
 ### Executor pi (`<task>`)
 
