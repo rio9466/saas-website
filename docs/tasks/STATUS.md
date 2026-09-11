@@ -13,11 +13,11 @@
 
 | ID    | 任务                                             | 分支                     | Base           | 依赖                    | 状态 | 证据 / 说明            |
 | ----- | ------------------------------------------------ | ------------------------ | -------------- | ----------------------- | ---- | ---------------------- |
-| BE-01 | 内容基础模型 + 公开内容接口 + 管理端内容 CRUD     | `be-content-foundation`  | `master-relay` | —                       | todo | worktree 已建，待认领   |
+| BE-01 | 内容基础模型 + 公开内容接口 + 管理端内容 CRUD     | `be-content-foundation`  | `master-relay` | —                       | in-progress | 已认领 c5657c2          |
 | BE-02 | 联系表单与收件箱                                  | `be-contact-inbox`       | `master-relay` | BE-01                   | todo | —                      |
 | BE-03 | 用户控制台 API                                    | `be-user-console-api`    | `master-relay` | —                       | todo | —                      |
 | BE-04 | 管理端内容 UI                                     | `be-admin-content-ui`    | `master-relay` | BE-01、BE-02            | todo | —                      |
-| FE-01 | 前端基础：i18n + 布局 + API 客户端 + SEO          | `fe-foundation`          | `master-relay` | —                       | todo | worktree 已建，待认领   |
+| FE-01 | 前端基础：i18n + 布局 + API 客户端 + SEO          | `fe-foundation`          | `master-relay` | —                       | in-progress | 已认领 137edbf          |
 | FE-02 | 公开页面（首页/功能/价格/关于/文档）              | `fe-public-pages`        | `master-relay` | BE-01、BE-02、FE-01     | todo | —                      |
 | FE-03 | 登录 / 注册 / 用户中心                            | `fe-auth-account`        | `master-relay` | BE-03、FE-01、FE-02     | todo | —                      |
 
