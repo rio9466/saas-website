@@ -123,3 +123,18 @@ export type ContactSubmissionPageData = NonNullable<
 >;
 export type ContactStatus =
   components["schemas"]["ContactStatusWrite"]["status"];
+
+// ---- 访问统计（契约 §6.3；OpenAPI 尚未生成，手写于此） ----
+export type AnalyticsRange = "today" | "7d" | "30d";
+
+export interface AnalyticsSourceItem {
+  source: string;
+  count: number;
+}
+
+export interface AnalyticsOverview {
+  range: AnalyticsRange;
+  pv: number;
+  source_count: number;
+  sources: AnalyticsSourceItem[];
+}
