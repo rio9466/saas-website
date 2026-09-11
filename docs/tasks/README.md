@@ -3,6 +3,8 @@
 由 `master-relay` 根据 [`docs/prd/saas-website-prd.md`](../prd/saas-website-prd.md) 与
 [`docs/api/frontend-api-contract.md`](../api/frontend-api-contract.md) 生成。
 
+任务状态台账见 [`STATUS.md`](STATUS.md)，由 `master-relay` 维护；执行者不要直接改本目录。
+
 ## 契约优先
 
 所有任务以 `docs/api/frontend-api-contract.md`（下称「契约」）为准。执行者**不得**自行更改
