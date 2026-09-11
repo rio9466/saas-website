@@ -1,0 +1,249 @@
+import { getConfig } from "@/config";
+import NProgress from "@/utils/progress";
+import { buildHierarchyTree } from "@/utils/tree";
+import remainingRouter from "./modules/remaining";
+import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
+import { usePermissionStoreHook } from "@/store/modules/permission";
+import { useUserStoreHook } from "@/store/modules/user";
+import { getAccessToken } from "@/utils/auth";
+import { isUrl, openLink, cloneDeep, isAllEmpty } from "@pureadmin/utils";
+import {
+  ascending,
+  getTopMenu,
+  initRouter,
+  isOneOfArray,
+  getHistoryMode,
+  findRouteByPath,
+  handleAliveRoute,
+  formatTwoStageRoutes,
+  formatFlatteningRoutes
+} from "./utils";
+import {
+  type Router,
+  type RouteRecordRaw,
+  type RouteComponent,
+  createRouter
+} from "vue-router";
+
+/** 自动导入全部静态路由，无需再手动引入！匹配 src/router/modules 目录（任何嵌套级别）中具有 .ts 扩展名的所有文件，除了 remaining.ts 文件 */
+const modules: Record<string, any> = import.meta.glob(
+  ["./modules/**/*.ts", "!./modules/**/remaining.ts"],
+  {
+    eager: true
+  }
+);
+
+/** 原始静态路由（未做任何处理） */
+const routes = [];
+
+Object.keys(modules).forEach(key => {
+  routes.push(modules[key].default);
+});
+
+/** 导出处理后的静态路由（三级及以上的路由全部拍成二级） */
+export const constantRoutes: Array<RouteRecordRaw> = formatTwoStageRoutes(
+  formatFlatteningRoutes(buildHierarchyTree(ascending(routes.flat(Infinity))))
+);
+
+/** 初始的静态路由，用于退出登录时重置路由 */
+const initConstantRoutes: Array<RouteRecordRaw> = cloneDeep(constantRoutes);
+
+/** 用于渲染菜单，保持原始层级 */
+export const constantMenus: Array<RouteComponent> = ascending(
+  routes.flat(Infinity)
+).concat(...remainingRouter);
+
+/** 不参与菜单的路由 */
+export const remainingPaths = Object.keys(remainingRouter).map(v => {
+  return remainingRouter[v].path;
+});
+
+/** 创建路由实例 */
+export const router: Router = createRouter({
+  history: getHistoryMode(import.meta.env.VITE_ROUTER_HISTORY),
+  routes: constantRoutes.concat(...(remainingRouter as any)),
+  strict: true,
+  scrollBehavior(to, from, savedPosition) {
+    return new Promise(resolve => {
+      if (savedPosition) {
+        return savedPosition;
+      } else {
+        if (from.meta.saveSrollTop) {
+          const top: number =
+            document.documentElement.scrollTop || document.body.scrollTop;
+          resolve({ left: 0, top });
+        }
+      }
+    });
+  }
+});
+
+/** 记录已经加载的页面路径 */
+const loadedPaths = new Set<string>();
+
+/** 重置已加载页面记录 */
+export function resetLoadedPaths() {
+  loadedPaths.clear();
+}
+
+/** 重置路由 */
+export function resetRouter() {
+  router.clearRoutes();
+  for (const route of initConstantRoutes.concat(...(remainingRouter as any))) {
+    router.addRoute(route);
+  }
+  router.options.routes = formatTwoStageRoutes(
+    formatFlatteningRoutes(buildHierarchyTree(ascending(routes.flat(Infinity))))
+  );
+  usePermissionStoreHook().clearAllCachePage();
+  resetLoadedPaths();
+}
+
+/** 路由白名单 */
+const whiteList = ["/login"];
+
+const { VITE_HIDE_HOME } = import.meta.env;
+
+/** 冷启动会话恢复（refresh + /me），同一时刻只执行一次，避免守卫死循环 */
+let restorePromise: Promise<boolean> | null = null;
+
+function restoreSessionOnce(): Promise<boolean> {
+  if (!restorePromise) {
+    restorePromise = useUserStoreHook()
+      .restoreSession()
+      .then(ok => {
+        return ok;
+      })
+      .finally(() => {
+        restorePromise = null;
+      });
+  }
+  return restorePromise;
+}
+
+/** 当前用户是否已认证（仅内存 token 或已加载资料） */
+function isAuthenticated(): boolean {
+  const userStore = useUserStoreHook();
+  return getAccessToken() !== "" || userStore.profileLoaded;
+}
+
+/** 判断当前路由对当前用户是否有权限（meta.roles / meta.permissions） */
+function hasRoutePermission(to: ToRouteType): boolean {
+  const { roles, permissions } = useUserStoreHook();
+  const routeRoles = to.meta?.roles as Array<string> | undefined;
+  const routePerms = to.meta?.permissions as Array<string> | undefined;
+  if (routeRoles?.length && !isOneOfArray(routeRoles, roles ?? []))
+    return false;
+  if (routePerms?.length && !isOneOfArray(routePerms, permissions ?? [])) {
+    return false;
+  }
+  return true;
+}
+
+router.beforeEach((to: ToRouteType, _from, next) => {
+  to.meta.loaded = loadedPaths.has(to.path);
+
+  if (!to.meta.loaded) {
+    NProgress.start();
+  }
+
+  if (to.meta?.keepAlive) {
+    handleAliveRoute(to, "add");
+    if (_from.name === undefined || _from.name === "Redirect") {
+      handleAliveRoute(to);
+    }
+  }
+
+  const externalLink = isUrl(to?.name as string);
+  if (!externalLink) {
+    to.matched.some(item => {
+      if (!item.meta.title) return "";
+      const Title = getConfig().Title;
+      if (Title) document.title = `${item.meta.title} | ${Title}`;
+      else document.title = item.meta.title as string;
+    });
+  }
+
+  /** 已登录后访问 /login 直接回首页 */
+  function toCorrectRoute() {
+    if (to.path === "/login") {
+      next(_from.fullPath && _from.path !== "/login" ? _from.fullPath : "/");
+      return;
+    }
+    whiteList.includes(to.fullPath) ? next(_from.fullPath) : next();
+  }
+
+  if (externalLink) {
+    openLink(to?.name as string);
+    NProgress.done();
+    return;
+  }
+
+  if (isAuthenticated()) {
+    // 无权限跳转403页面
+    if (!hasRoutePermission(to)) {
+      next({ path: "/error/403" });
+      return;
+    }
+    // 开启隐藏首页后在浏览器地址栏手动输入首页路由则跳转到404页面
+    if (VITE_HIDE_HOME === "true" && to.fullPath === "/dashboard") {
+      next({ path: "/error/404" });
+      return;
+    }
+    // 刷新页面后内存状态为空，但会话已恢复：重建本地菜单
+    if (
+      usePermissionStoreHook().wholeMenus.length === 0 &&
+      to.path !== "/login"
+    ) {
+      initRouter().then((router: Router) => {
+        if (!useMultiTagsStoreHook().getMultiTagsCache) {
+          const { path } = to;
+          const route = findRouteByPath(
+            path,
+            router.options.routes[0].children
+          );
+          getTopMenu(true);
+          if (route && route.meta?.title) {
+            const { path, name, meta } = route;
+            useMultiTagsStoreHook().handleTags("push", { path, name, meta });
+          }
+        }
+        if (isAllEmpty(to.name)) router.push(to.fullPath);
+      });
+    }
+    toCorrectRoute();
+  } else {
+    if (to.path === "/login") {
+      next();
+      return;
+    }
+    if (whiteList.includes(to.path)) {
+      next();
+      return;
+    }
+    // 未登录：尝试一次冷启动恢复（refresh + /me），成功则继续，失败回登录页
+    restoreSessionOnce()
+      .then(ok => {
+        if (ok) {
+          if (usePermissionStoreHook().wholeMenus.length === 0) {
+            return initRouter().then(() => {
+              next({ ...to, replace: true });
+            });
+          }
+          next({ ...to, replace: true });
+        } else {
+          next({ path: "/login" });
+        }
+      })
+      .catch(() => {
+        next({ path: "/login" });
+      });
+  }
+});
+
+router.afterEach(to => {
+  loadedPaths.add(to.path);
+  NProgress.done();
+});
+
+export default router;
