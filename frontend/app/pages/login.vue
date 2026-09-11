@@ -9,7 +9,7 @@ const form = reactive({
   identifier: typeof route.query.identifier === 'string' ? route.query.identifier : '',
   password: ''
 })
-const errors = reactive<Record<string, string>>({})
+const errors = reactive<Record<string, string | undefined>>({})
 const formError = ref('')
 const submitting = ref(false)
 const unverified = ref(false)
@@ -46,8 +46,10 @@ function safeRedirect(value: unknown): string | null {
 }
 
 function validate(): boolean {
-  errors.identifier = form.identifier.trim() ? '' : t('auth.login.errors.identifierRequired')
-  errors.password = form.password ? '' : t('auth.login.errors.passwordRequired')
+  // `undefined` (not '') keeps the value falsy for UFormField: its `error` prop
+  // is typed `[Boolean, String]`, so Vue casts an empty string to `true`.
+  errors.identifier = form.identifier.trim() ? undefined : t('auth.login.errors.identifierRequired')
+  errors.password = form.password ? undefined : t('auth.login.errors.passwordRequired')
   return !Object.values(errors).some(Boolean)
 }
 

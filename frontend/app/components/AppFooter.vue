@@ -94,7 +94,7 @@ function targetOf(target: string) {
     </template>
 
     <template #bottom>
-      <div class="flex flex-col gap-1 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col items-center gap-1 text-center text-xs text-muted">
         <p>
           {{ settings.footer_text || `© ${year} ${settings.site_name}. ${t('footer.rights')}` }}
         </p>

@@ -10,7 +10,7 @@ const form = reactive({
   password: '',
   confirm: ''
 })
-const errors = reactive<Record<string, string>>({})
+const errors = reactive<Record<string, string | undefined>>({})
 const formError = ref('')
 const submitting = ref(false)
 const created = ref('')
@@ -26,21 +26,23 @@ function byteLength(value: string): number {
 }
 
 function validate(): boolean {
+  // `undefined` (not '') keeps the value falsy for UFormField: its `error` prop
+  // is typed `[Boolean, String]`, so Vue casts an empty string to `true`.
   errors.username = !form.username.trim()
     ? t('auth.register.errors.usernameRequired')
     : (form.username.trim().length < 3 || form.username.trim().length > 64
         ? t('auth.register.errors.usernameLength')
-        : '')
+        : undefined)
   errors.email = !form.email.trim()
     ? t('auth.register.errors.emailRequired')
-    : (EMAIL_PATTERN.test(form.email.trim()) ? '' : t('auth.register.errors.emailInvalid'))
+    : (EMAIL_PATTERN.test(form.email.trim()) ? undefined : t('auth.register.errors.emailInvalid'))
   const passwordBytes = byteLength(form.password)
   errors.password = !form.password
     ? t('auth.register.errors.passwordRequired')
-    : (passwordBytes < 8 || passwordBytes > 72 ? t('auth.register.errors.passwordLength') : '')
+    : (passwordBytes < 8 || passwordBytes > 72 ? t('auth.register.errors.passwordLength') : undefined)
   errors.confirm = !form.confirm
     ? t('auth.register.errors.confirmRequired')
-    : (form.confirm === form.password ? '' : t('auth.register.errors.confirmMismatch'))
+    : (form.confirm === form.password ? undefined : t('auth.register.errors.confirmMismatch'))
   return !Object.values(errors).some(Boolean)
 }
 
