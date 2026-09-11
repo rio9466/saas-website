@@ -20,7 +20,7 @@
 | FE-01 | 前端基础：i18n + 布局 + API 客户端 + SEO          | `fe-foundation`          | `master-relay` | —                       | done | 已合入 f83c373          |
 | FE-02 | 公开页面（首页/功能/价格/关于/文档）              | `fe-public-pages`        | `master-relay` | BE-01、BE-02、FE-01     | done | 已合入 fa9a792（分支已删） |
 | FE-03 | 登录 / 注册 / 用户中心                            | `fe-auth-account`        | `master-relay` | BE-03、FE-01、FE-02     | todo | —                      |
-| HOTFIX-01 | 运行时错误（Nuxt 500 + admin .env 崩溃）    | `hotfix-runtime-errors`  | `master-relay` | —                       | in-progress | 已认领 ade0f95，修复中 |
+| HOTFIX-01 | 运行时错误（Nuxt 500 + admin .env 崩溃）    | `hotfix-runtime-errors`  | `master-relay` | —                       | done | 已合入 5e5f809          |
 
 ## 更新规则
 
