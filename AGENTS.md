@@ -16,3 +16,11 @@
   - `frontend-dev` — frontend development.
   - `backend-dev` — backend development, including the backend admin system.
 - Use Orca-managed git worktrees. All development branches (`master-relay`, `frontend-dev`, `backend-dev`) are checked out under `~/orca/workspaces/saas-website/`; the repo root `~/orca/projects/saas-website` stays on `master`.
+
+### Branch constraints
+
+- Each branch edits only its own area: frontend branches edit `frontend/`, backend branches edit `backend/`. Cross-area changes need separate task branches or an explicit exception in the task document.
+- New task branches are cut from `master-relay` and merged back into `master-relay`; `master` stays untouched unless the user explicitly approves.
+- Never reintroduce easy-admin's git history, add it as a submodule, or re-add the original repo as a remote.
+- Area rules live in `frontend/AGENTS.md` and `backend/AGENTS.md`; the nearest layered `AGENTS.md` wins.
+- Full workflow, roles, task dispatch, and initialization paths: see `ORCA_WORKFLOW.md`.
