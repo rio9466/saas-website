@@ -8,6 +8,10 @@ import (
 
 	"github.com/rio9466/easy-admin/server/internal/domain/adminauth"
 	"github.com/rio9466/easy-admin/server/internal/domain/apperr"
+	"github.com/rio9466/easy-admin/server/internal/domain/media"
+	"github.com/rio9466/easy-admin/server/internal/platform/mailer"
+	"github.com/rio9466/easy-admin/server/internal/platform/ratelimit"
+	"github.com/rio9466/easy-admin/server/internal/platform/secrets"
 	"github.com/rio9466/easy-admin/server/internal/repository/primary"
 )
 
@@ -22,13 +26,34 @@ type Actor struct {
 	UserAgent        string
 }
 
-// Service implements public content reads and administrator content CRUD with
-// RBAC and pending-first audit.
+// Service implements public content and contact reads, administrator content
+// CRUD, the contact inbox, and the media library, with RBAC and pending-first
+// audit.
 type Service struct {
-	content *primary.ContentRepository
-	admins  *primary.AdminRepository
-	audits  auditStore
-	logger  *slog.Logger
+	content    *primary.ContentRepository
+	admins     *primary.AdminRepository
+	audits     auditStore
+	inbox      *primary.InboxRepository
+	users      *primary.UserRepository
+	limiter    *ratelimit.Limiter
+	box        *secrets.Box
+	mediaStore media.Store
+	newMailer  func(cfg mailer.Settings) (mailer.Mailer, error)
+	logger     *slog.Logger
+}
+
+// Options carries the optional/dedicated collaborators for the contact inbox
+// and media library. Inbox, Limiter, and MediaStore are required; Users and
+// Secrets may be nil, in which case notification email is skipped.
+type Options struct {
+	Inbox      *primary.InboxRepository
+	Users      *primary.UserRepository
+	Limiter    *ratelimit.Limiter
+	Secrets    *secrets.Box
+	MediaStore media.Store
+	// NewMailer builds the SMTP mailer for notification email. Nil uses
+	// mailer.New. Tests inject a fake to avoid external mail.
+	NewMailer func(cfg mailer.Settings) (mailer.Mailer, error)
 }
 
 type auditStore interface {
@@ -36,8 +61,10 @@ type auditStore interface {
 	Finalize(ctx context.Context, id int64, resourceID string, outcome string, details map[string]any) error
 }
 
-// New constructs a content service. All collaborators are required.
-func New(contentRepo *primary.ContentRepository, admins *primary.AdminRepository, audits auditStore, logger *slog.Logger) (*Service, error) {
+// New constructs a content service. contentRepo, admins, and audits are
+// required; opts.Inbox, opts.Limiter, and opts.MediaStore are required for the
+// contact inbox and media library.
+func New(contentRepo *primary.ContentRepository, admins *primary.AdminRepository, audits auditStore, logger *slog.Logger, opts Options) (*Service, error) {
 	if contentRepo == nil {
 		return nil, errors.New("content repository is required")
 	}
@@ -47,10 +74,36 @@ func New(contentRepo *primary.ContentRepository, admins *primary.AdminRepository
 	if audits == nil {
 		return nil, errors.New("audit store is required")
 	}
+	if opts.Inbox == nil {
+		return nil, errors.New("inbox repository is required")
+	}
+	if opts.MediaStore == nil {
+		return nil, errors.New("media store is required")
+	}
+	if opts.Limiter == nil {
+		return nil, errors.New("rate limiter is required")
+	}
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Service{content: contentRepo, admins: admins, audits: audits, logger: logger}, nil
+	newMailer := opts.NewMailer
+	if newMailer == nil {
+		newMailer = func(cfg mailer.Settings) (mailer.Mailer, error) {
+			return mailer.New(cfg)
+		}
+	}
+	return &Service{
+		content:    contentRepo,
+		admins:     admins,
+		audits:     audits,
+		inbox:      opts.Inbox,
+		users:      opts.Users,
+		limiter:    opts.Limiter,
+		box:        opts.Secrets,
+		mediaStore: opts.MediaStore,
+		newMailer:  newMailer,
+		logger:     logger,
+	}, nil
 }
 
 // requireAdminActor rejects actors that did not authenticate as administrators.

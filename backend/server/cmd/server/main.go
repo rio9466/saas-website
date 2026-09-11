@@ -218,9 +218,25 @@ func run(configPath string) error {
 	}
 	userAdapter := &handler.UserServiceAdapter{Svc: userSvc}
 
-	// Site content platform: public content reads plus administrator content CRUD.
+	// Site content platform: public content reads, administrator content CRUD,
+	// the contact inbox, and the media library.
 	contentRepo := primary.NewContentRepository(primaryDB.GORM())
-	contentSvc, err := contentsvc.New(contentRepo, adminRepo, auditRepo, logger)
+	inboxRepo := primary.NewInboxRepository(primaryDB.GORM())
+	mediaDir := strings.TrimSpace(os.Getenv("MEDIA_DIR"))
+	if mediaDir == "" {
+		mediaDir = "media"
+	}
+	mediaStore, err := contentsvc.NewLocalDiskMediaStore(mediaDir)
+	if err != nil {
+		return errors.New("configure media store failed")
+	}
+	contentSvc, err := contentsvc.New(contentRepo, adminRepo, auditRepo, logger, contentsvc.Options{
+		Inbox:      inboxRepo,
+		Users:      userRepo,
+		Limiter:    limiter,
+		Secrets:    secretBox,
+		MediaStore: mediaStore,
+	})
 	if err != nil {
 		return errors.New("configure content service failed")
 	}

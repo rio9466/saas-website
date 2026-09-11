@@ -1593,6 +1593,65 @@ paths:
           $ref: '#/components/responses/NotFound'
         '503':
           $ref: '#/components/responses/DependencyUnavailable'
+  /api/v1/public/contact:
+    post:
+      tags: [public-content]
+      summary: Submit a public contact-form message
+      description: |
+        Validates name/email/message/consent, applies a per-IP fixed-window
+        rate limit, and persists the submission. The hidden `website` honeypot
+        yields a silent 201 without persisting. Redis failures fail closed.
+      operationId: submitPublicContact
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, message, consent]
+              properties:
+                name: { type: string, maxLength: 200 }
+                email: { type: string, format: email, maxLength: 254 }
+                company: { type: string, maxLength: 200 }
+                message: { type: string, maxLength: 5000 }
+                locale: { type: string, maxLength: 35 }
+                consent: { type: boolean, enum: [true] }
+                website: { type: string, description: "Honeypot; must be empty" }
+      responses:
+        '201':
+          description: Submission accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactReceiptSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+  /media/{filename}:
+    get:
+      tags: [public-content]
+      summary: Serve a stored media object
+      operationId: getMediaFile
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/MediaFilename'
+      responses:
+        '200':
+          description: Media bytes
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/v1/admin/site-settings:
     get:
       tags: [admin-content]
@@ -2483,6 +2542,181 @@ paths:
           $ref: '#/components/responses/NotFound'
         '503':
           $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/contact-submissions:
+    get:
+      tags: [admin-content]
+      summary: List contact submissions
+      operationId: listContactSubmissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - name: status
+          in: query
+          required: false
+          description: Filter by inbox status
+          schema:
+            type: string
+            enum: [new, read, handled]
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Paginated contact submissions, newest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSubmissionPageSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+  /api/v1/admin/contact-submissions/{id}:
+    get:
+      tags: [admin-content]
+      summary: Read one contact submission
+      operationId: getContactSubmission
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Contact submission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSubmissionSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    patch:
+      tags: [admin-content]
+      summary: Update a contact submission status
+      description: Only the status field is accepted and changed.
+      operationId: updateContactSubmissionStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactStatusWrite'
+      responses:
+        '200':
+          description: Updated contact submission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSubmissionSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/media:
+    get:
+      tags: [admin-content]
+      summary: List media assets
+      operationId: listMedia
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Paginated media assets, newest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetPageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+    post:
+      tags: [admin-content]
+      summary: Upload a media asset
+      description: multipart/form-data field `file`; png/jpeg/webp/svg/gif up to 5MB.
+      operationId: uploadMedia
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Uploaded media asset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/media/{id}:
+    delete:
+      tags: [admin-content]
+      summary: Delete a media asset
+      operationId: deleteMedia
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
 components:
   securitySchemes:
     bearerAuth:
@@ -2526,6 +2760,13 @@ components:
         enum: [header, footer]
     Slug:
       name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    MediaFilename:
+      name: filename
       in: path
       required: true
       schema:
@@ -3915,3 +4156,98 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/DocArticleTranslation'
+    ContactReceipt:
+      type: object
+      required: [id, submitted_at]
+      properties:
+        id: { type: string }
+        submitted_at: { type: string, format: date-time }
+    ContactReceiptSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/ContactReceipt'
+    ContactSubmission:
+      type: object
+      required: [id, name, email, company, message, locale, status, source_ip, user_agent, created_at, updated_at]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        company: { type: string }
+        message: { type: string }
+        locale: { type: string }
+        status: { type: string, enum: [new, read, handled] }
+        source_ip: { type: string }
+        user_agent: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ContactSubmissionSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/ContactSubmission'
+    ContactSubmissionPageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ContactSubmission'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+    ContactStatusWrite:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [new, read, handled] }
+      additionalProperties: false
+    MediaAsset:
+      type: object
+      required: [id, url, mime, size, width, height]
+      properties:
+        id: { type: string }
+        url: { type: string }
+        mime: { type: string }
+        size: { type: integer }
+        width: { type: integer }
+        height: { type: integer }
+    MediaAssetSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/MediaAsset'
+    MediaAssetPageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/MediaAsset'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
