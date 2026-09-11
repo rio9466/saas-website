@@ -15,4 +15,4 @@
 - Long-lived development branches, both based on `master-relay`:
   - `frontend-dev` — frontend development.
   - `backend-dev` — backend development, including the backend admin system.
-- Use git worktrees. `master-relay` lives at `../saas-website.worktrees/master-relay` (sibling of the repo root); `frontend-dev` and `backend-dev` are Orca-managed worktrees under `../../workspaces/saas-website/`. The repo root checkout stays on `master`.
+- Use Orca-managed git worktrees. All development branches (`master-relay`, `frontend-dev`, `backend-dev`) are checked out under `~/orca/workspaces/saas-website/`; the repo root `~/orca/projects/saas-website` stays on `master`.
