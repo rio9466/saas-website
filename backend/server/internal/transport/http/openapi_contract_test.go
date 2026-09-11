@@ -64,6 +64,7 @@ func TestOpenAPIAndRouterFullParity(t *testing.T) {
 		UserClient:   &stubUserClient{},
 		UserAdmin:    &stubUserAdmin{},
 		Content:      &stubContent{},
+		Analytics:    &stubAnalytics{},
 		UserTokens:   stubTokens{},
 		UserSessions: stubSessions{},
 	})

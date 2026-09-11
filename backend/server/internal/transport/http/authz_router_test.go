@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/rio9466/easy-admin/server/internal/domain/adminauth"
+	"github.com/rio9466/easy-admin/server/internal/domain/analytics"
 	"github.com/rio9466/easy-admin/server/internal/domain/apperr"
 	platformauth "github.com/rio9466/easy-admin/server/internal/platform/auth"
 	transporthttp "github.com/rio9466/easy-admin/server/internal/transport/http"
@@ -21,6 +22,22 @@ import (
 // embedded interface is nil because route registration never invokes handlers.
 type stubContent struct {
 	handler.ContentService
+}
+
+// stubAnalytics satisfies handler.AnalyticsService for router parity and
+// authorization tests. The embedded interface covers methods not under test.
+type stubAnalytics struct {
+	handler.AnalyticsService
+	overviewCalls int
+}
+
+func (s *stubAnalytics) RecordPageView(context.Context, analytics.PageViewInput, string) error {
+	return nil
+}
+
+func (s *stubAnalytics) Overview(context.Context, handler.Actor, string) (*analytics.Overview, error) {
+	s.overviewCalls++
+	return &analytics.Overview{Range: analytics.RangeToday, Sources: []analytics.SourceCount{}}, nil
 }
 
 // stubTokens implements middleware.TokenParser for authz routing tests.
@@ -214,6 +231,86 @@ func TestAdministratorsListAllowedWithPermission(t *testing.T) {
 	}
 	if auth.listCalls != 1 {
 		t.Fatalf("listCalls = %d, want 1", auth.listCalls)
+	}
+}
+
+// TestAnalyticsOverviewForbiddenWithoutPermission proves the admin overview
+// route is closed to an authenticated principal lacking admin.analytics.read.
+func TestAnalyticsOverviewForbiddenWithoutPermission(t *testing.T) {
+	t.Parallel()
+
+	svc := &stubAnalytics{}
+	auth := &stubAdminAuth{
+		principal: &middleware.AuthzPrincipal{
+			AdminID:         7,
+			Username:        "viewer",
+			Enabled:         true,
+			RoleCodes:       []string{adminauth.RoleFinance},
+			PermissionCodes: []string{adminauth.PermDashboardView},
+		},
+	}
+	router := transporthttp.NewRouter(transporthttp.Dependencies{
+		ReadyChecker: stubChecker{},
+		AdminAuth:    auth,
+		Analytics:    svc,
+		Tokens: stubTokens{claims: &platformauth.Claims{
+			RegisteredClaims: jwt.RegisteredClaims{Subject: "7"},
+			SessionID:        "sid-7",
+			TokenType:        platformauth.TokenTypeAccess,
+		}},
+		Sessions: stubSessions{sess: &platformauth.Session{AdminID: 7}},
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/analytics/overview", nil)
+	req.Header.Set("Authorization", "Bearer test-access")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	assertAppError(t, rec, http.StatusForbidden, apperr.CodeForbidden)
+	if svc.overviewCalls != 0 {
+		t.Fatal("overview handler called despite missing permission")
+	}
+}
+
+// TestAnalyticsOverviewAllowedForSuperAdmin proves super_admin bypasses the
+// permission check and receives the overview payload, uncached.
+func TestAnalyticsOverviewAllowedForSuperAdmin(t *testing.T) {
+	t.Parallel()
+
+	svc := &stubAnalytics{}
+	auth := &stubAdminAuth{
+		principal: &middleware.AuthzPrincipal{
+			AdminID:   1,
+			Username:  "admin",
+			Enabled:   true,
+			RoleCodes: []string{adminauth.RoleSuperAdmin},
+		},
+	}
+	router := transporthttp.NewRouter(transporthttp.Dependencies{
+		ReadyChecker: stubChecker{},
+		AdminAuth:    auth,
+		Analytics:    svc,
+		Tokens: stubTokens{claims: &platformauth.Claims{
+			RegisteredClaims: jwt.RegisteredClaims{Subject: "1"},
+			SessionID:        "sid-1",
+			TokenType:        platformauth.TokenTypeAccess,
+		}},
+		Sessions: stubSessions{sess: &platformauth.Session{AdminID: 1}},
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/analytics/overview?range=7d", nil)
+	req.Header.Set("Authorization", "Bearer test-access")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	if got := rec.Header().Get("Cache-Control"); got != "no-store" {
+		t.Fatalf("Cache-Control = %q, want no-store", got)
+	}
+	if svc.overviewCalls != 1 {
+		t.Fatalf("overviewCalls = %d, want 1", svc.overviewCalls)
 	}
 }
 
