@@ -10,24 +10,13 @@ export default {
   path: "/content",
   name: "ContentManagement",
   component: Layout,
-  redirect: "/content/site",
+  redirect: "/content/navigation",
   meta: {
     icon: "ri/file-list-3-line",
     title: "内容管理",
     rank: 3
   },
   children: [
-    {
-      path: "/content/site",
-      name: "ContentSiteSettings",
-      component: () => import("@/views/content/site/index.vue"),
-      meta: {
-        title: "站点设置",
-        icon: "ep/setting",
-        roles: ["super_admin", "admin"],
-        permissions: ["admin.content.read"]
-      }
-    },
     {
       path: "/content/navigation",
       name: "ContentNavigation",

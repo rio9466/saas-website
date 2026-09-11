@@ -302,13 +302,12 @@ onMounted(async () => {
         <el-form-item label="可见">
           <el-switch v-model="form.visible" />
         </el-form-item>
-        <el-form-item label="多语言文案">
-          <LocaleTranslationTabs
-            v-model:translations="form.translations"
-            :locales="locales"
-            :fields="translationFields"
-          />
-        </el-form-item>
+        <LocaleTranslationTabs
+          v-model:translations="form.translations"
+          :locales="locales"
+          :fields="translationFields"
+          title="多语言文案"
+        />
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>

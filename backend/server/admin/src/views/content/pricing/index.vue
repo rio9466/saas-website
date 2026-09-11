@@ -316,25 +316,23 @@ onMounted(async () => {
         <el-form-item label="可见">
           <el-switch v-model="form.visible" />
         </el-form-item>
-        <el-form-item label="多语言内容">
-          <LocaleTranslationTabs
-            v-model:translations="form.translations"
-            :locales="locales"
-            :fields="translationFields"
-          >
-            <template #extra="{ locale }">
-              <el-form-item label="功能清单">
-                <el-input
-                  type="textarea"
-                  :rows="4"
-                  placeholder="每行一条功能，如：10 个席位"
-                  :model-value="listToText(form.features[locale])"
-                  @update:model-value="value => setFeatures(locale, value)"
-                />
-              </el-form-item>
-            </template>
-          </LocaleTranslationTabs>
-        </el-form-item>
+        <LocaleTranslationTabs
+          v-model:translations="form.translations"
+          :locales="locales"
+          :fields="translationFields"
+        >
+          <template #extra="{ locale }">
+            <el-form-item label="功能清单">
+              <el-input
+                type="textarea"
+                :rows="4"
+                placeholder="每行一条功能，如：10 个席位"
+                :model-value="listToText(form.features[locale])"
+                @update:model-value="value => setFeatures(locale, value)"
+              />
+            </el-form-item>
+          </template>
+        </LocaleTranslationTabs>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>

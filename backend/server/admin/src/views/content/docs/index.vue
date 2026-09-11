@@ -150,7 +150,7 @@ const articleQuery = reactive({
 
 const articleFields: TranslationFieldDef[] = [
   { key: "title", label: "标题" },
-  { key: "body_md", label: "正文（Markdown）", type: "textarea", rows: 10 },
+  { key: "body_md", label: "正文（Markdown）", type: "markdown" },
   { key: "seo_title", label: "SEO 标题" },
   { key: "seo_description", label: "SEO 描述", type: "textarea", rows: 3 }
 ];
@@ -471,13 +471,11 @@ onMounted(async () => {
         <el-form-item label="发布">
           <el-switch v-model="articleForm.published" />
         </el-form-item>
-        <el-form-item label="多语言内容">
-          <LocaleTranslationTabs
-            v-model:translations="articleForm.translations"
-            :locales="locales"
-            :fields="articleFields"
-          />
-        </el-form-item>
+        <LocaleTranslationTabs
+          v-model:translations="articleForm.translations"
+          :locales="locales"
+          :fields="articleFields"
+        />
       </el-form>
       <template #footer>
         <el-button @click="articleDialogVisible = false">取消</el-button>
@@ -503,13 +501,12 @@ onMounted(async () => {
         <el-form-item label="排序">
           <el-input-number v-model="categoryForm.sort_order" :min="0" />
         </el-form-item>
-        <el-form-item label="多语言名称">
-          <LocaleTranslationTabs
-            v-model:translations="categoryForm.translations"
-            :locales="locales"
-            :fields="categoryFields"
-          />
-        </el-form-item>
+        <LocaleTranslationTabs
+          v-model:translations="categoryForm.translations"
+          :locales="locales"
+          :fields="categoryFields"
+          title="多语言名称"
+        />
       </el-form>
       <template #footer>
         <el-button @click="categoryDialogVisible = false">取消</el-button>

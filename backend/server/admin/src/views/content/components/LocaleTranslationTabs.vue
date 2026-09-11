@@ -4,6 +4,7 @@ import type { LocaleOption } from "@/api/contract";
 import type { TranslationFieldDef, TranslationMap } from "../types";
 import { listToText, textToList } from "../translations";
 import JsonTextarea from "./JsonTextarea.vue";
+import MarkdownEditor from "./MarkdownEditor.vue";
 import MediaPicker from "./MediaPicker.vue";
 
 /**
@@ -23,8 +24,16 @@ const props = withDefaults(
     missingText?: string;
     rawJson?: boolean;
     disabled?: boolean;
+    /** 区块标题；不需要标题时传空串 */
+    title?: string;
   }>(),
-  { fields: () => [], missingText: "未翻译", rawJson: false, disabled: false }
+  {
+    fields: () => [],
+    missingText: "未翻译",
+    rawJson: false,
+    disabled: false,
+    title: "多语言内容"
+  }
 );
 
 const emit = defineEmits<{
@@ -115,133 +124,153 @@ function textToKv(text: string): Array<{ value: string; label: string }> {
 </script>
 
 <template>
-  <el-tabs v-model="active" class="locale-tabs">
-    <el-tab-pane
-      v-for="loc in locales"
-      :key="loc.code"
-      :name="loc.code"
-      :disabled="disabled && !has(loc.code)"
-    >
-      <template #label>
-        <span class="tab-label">
-          {{ loc.label }}
-          <el-tag
-            v-if="!has(loc.code)"
-            size="small"
-            type="info"
-            effect="plain"
-            class="ml-1"
-          >
-            {{ missingText }}
-          </el-tag>
-        </span>
-      </template>
+  <div class="locale-block">
+    <div v-if="title" class="locale-block__title">{{ title }}</div>
+    <el-tabs v-model="active" class="locale-tabs">
+      <el-tab-pane
+        v-for="loc in locales"
+        :key="loc.code"
+        :name="loc.code"
+        :disabled="disabled && !has(loc.code)"
+      >
+        <template #label>
+          <span class="tab-label">
+            {{ loc.label }}
+            <el-tag
+              v-if="!has(loc.code)"
+              size="small"
+              type="info"
+              effect="plain"
+              class="ml-1"
+            >
+              {{ missingText }}
+            </el-tag>
+          </span>
+        </template>
 
-      <div v-if="!has(loc.code)" class="locale-missing">
-        <span class="text-secondary">该语言尚未翻译</span>
-        <el-button
-          type="primary"
-          plain
-          size="small"
-          :disabled="disabled"
-          @click="add(loc.code)"
-        >
-          添加 {{ loc.label }} 翻译
-        </el-button>
-      </div>
-      <slot v-if="!has(loc.code)" name="extra" :locale="loc.code" />
-
-      <template v-else>
-        <el-form-item v-if="rawJson" label="该语言数据（JSON）">
-          <JsonTextarea
-            :model-value="localeObject(loc.code)"
-            :rows="10"
-            :disabled="disabled"
-            @update:model-value="value => setLocaleObject(loc.code, value)"
-            @update:invalid="emit('invalid', true)"
-          />
-        </el-form-item>
-
-        <el-form-item
-          v-for="field in fields"
-          :key="field.key"
-          :label="field.label"
-        >
-          <el-input
-            v-if="(field.type ?? 'input') === 'input'"
-            :model-value="get(loc.code, field.key) as string"
-            :placeholder="field.placeholder"
-            :disabled="disabled"
-            @update:model-value="value => set(loc.code, field.key, value)"
-          />
-          <el-input
-            v-else-if="field.type === 'textarea'"
-            type="textarea"
-            :rows="field.rows ?? 6"
-            :placeholder="field.placeholder"
-            :disabled="disabled"
-            :model-value="get(loc.code, field.key) as string"
-            @update:model-value="value => set(loc.code, field.key, value)"
-          />
-          <el-input
-            v-else-if="field.type === 'string-list'"
-            type="textarea"
-            :rows="field.rows ?? 5"
-            :placeholder="field.placeholder ?? '每行一条'"
-            :disabled="disabled"
-            :model-value="listToText(get(loc.code, field.key) as string[])"
-            @update:model-value="
-              value => set(loc.code, field.key, textToList(value))
-            "
-          />
-          <el-input
-            v-else-if="field.type === 'kv-list'"
-            type="textarea"
-            :rows="field.rows ?? 4"
-            :placeholder="field.placeholder ?? '每行：数值|说明'"
-            :disabled="disabled"
-            :model-value="kvToText(get(loc.code, field.key))"
-            @update:model-value="
-              value => set(loc.code, field.key, textToKv(value))
-            "
-          />
-          <MediaPicker
-            v-else-if="field.type === 'media'"
-            :model-value="(get(loc.code, field.key) as string) ?? ''"
-            :placeholder="field.placeholder"
-            @update:model-value="value => set(loc.code, field.key, value)"
-          />
-          <JsonTextarea
-            v-else
-            :model-value="get(loc.code, field.key)"
-            :rows="6"
-            :disabled="disabled"
-            @update:model-value="value => set(loc.code, field.key, value)"
-            @update:invalid="emit('invalid', true)"
-          />
-          <div v-if="field.tip" class="text-xs text-secondary mt-1">
-            {{ field.tip }}
-          </div>
-        </el-form-item>
-
-        <slot name="extra" :locale="loc.code" />
-
-        <el-form-item>
+        <div v-if="!has(loc.code)" class="locale-missing">
+          <span class="text-secondary">该语言尚未翻译</span>
           <el-button
-            link
-            type="danger"
+            type="primary"
+            plain
+            size="small"
             :disabled="disabled"
-            @click="remove(loc.code)"
+            @click="add(loc.code)"
           >
-            移除该语言
+            添加 {{ loc.label }} 翻译
           </el-button>
-        </el-form-item>
-      </template>
-    </el-tab-pane>
-  </el-tabs>
+        </div>
+        <slot v-if="!has(loc.code)" name="extra" :locale="loc.code" />
+
+        <template v-else>
+          <el-form-item v-if="rawJson" label="该语言数据（JSON）">
+            <JsonTextarea
+              :model-value="localeObject(loc.code)"
+              :rows="10"
+              :disabled="disabled"
+              @update:model-value="value => setLocaleObject(loc.code, value)"
+              @update:invalid="emit('invalid', true)"
+            />
+          </el-form-item>
+
+          <el-form-item
+            v-for="field in fields"
+            :key="field.key"
+            :label="field.label"
+          >
+            <el-input
+              v-if="(field.type ?? 'input') === 'input'"
+              :model-value="get(loc.code, field.key) as string"
+              :placeholder="field.placeholder"
+              :disabled="disabled"
+              @update:model-value="value => set(loc.code, field.key, value)"
+            />
+            <el-input
+              v-else-if="field.type === 'textarea'"
+              type="textarea"
+              :rows="field.rows ?? 6"
+              :placeholder="field.placeholder"
+              :disabled="disabled"
+              :model-value="get(loc.code, field.key) as string"
+              @update:model-value="value => set(loc.code, field.key, value)"
+            />
+            <MarkdownEditor
+              v-else-if="field.type === 'markdown'"
+              :model-value="(get(loc.code, field.key) as string) ?? ''"
+              @update:model-value="value => set(loc.code, field.key, value)"
+            />
+            <el-input
+              v-else-if="field.type === 'string-list'"
+              type="textarea"
+              :rows="field.rows ?? 5"
+              :placeholder="field.placeholder ?? '每行一条'"
+              :disabled="disabled"
+              :model-value="listToText(get(loc.code, field.key) as string[])"
+              @update:model-value="
+                value => set(loc.code, field.key, textToList(value))
+              "
+            />
+            <el-input
+              v-else-if="field.type === 'kv-list'"
+              type="textarea"
+              :rows="field.rows ?? 4"
+              :placeholder="field.placeholder ?? '每行：数值|说明'"
+              :disabled="disabled"
+              :model-value="kvToText(get(loc.code, field.key))"
+              @update:model-value="
+                value => set(loc.code, field.key, textToKv(value))
+              "
+            />
+            <MediaPicker
+              v-else-if="field.type === 'media'"
+              :model-value="(get(loc.code, field.key) as string) ?? ''"
+              :placeholder="field.placeholder"
+              @update:model-value="value => set(loc.code, field.key, value)"
+            />
+            <JsonTextarea
+              v-else
+              :model-value="get(loc.code, field.key)"
+              :rows="6"
+              :disabled="disabled"
+              @update:model-value="value => set(loc.code, field.key, value)"
+              @update:invalid="emit('invalid', true)"
+            />
+            <div v-if="field.tip" class="text-xs text-secondary mt-1">
+              {{ field.tip }}
+            </div>
+          </el-form-item>
+
+          <slot name="extra" :locale="loc.code" />
+
+          <el-form-item>
+            <el-button
+              link
+              type="danger"
+              :disabled="disabled"
+              @click="remove(loc.code)"
+            >
+              移除该语言
+            </el-button>
+          </el-form-item>
+        </template>
+      </el-tab-pane>
+    </el-tabs>
+  </div>
 </template>
 
 <style scoped>
+.locale-block {
+  width: 100%;
+}
+
+.locale-block__title {
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+  color: var(--el-text-color-primary);
+}
+
 .locale-tabs :deep(.el-tabs__content) {
   overflow: visible;
 }

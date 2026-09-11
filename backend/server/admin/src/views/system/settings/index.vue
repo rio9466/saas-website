@@ -1,15 +1,32 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { message } from "@/utils/message";
-import { getErrorMessage } from "@/utils/error";
+import { getErrorMessage, getErrorCode } from "@/utils/error";
 import {
   getSystemSettingsApi,
   updateSystemSettingsApi
 } from "@/api/systemSettings";
+import { getSiteSettingsApi, updateSiteSettingsApi } from "@/api/siteSettings";
 import { listUserLevelsApi } from "@/api/userLevels";
 import { toFourDecimal } from "@/utils/points";
+import { hasPerms } from "@/utils/perms";
 import type { SystemSettings, UserLevel } from "@/api/contract";
+import {
+  loadContentLocales,
+  useContentLocales
+} from "@/views/content/useContentLocales";
+import { compactTranslations } from "@/views/content/translations";
+import type {
+  TranslationFieldDef,
+  TranslationMap
+} from "@/views/content/types";
+import LocaleTranslationTabs from "@/views/content/components/LocaleTranslationTabs.vue";
+import MediaPicker from "@/views/content/components/MediaPicker.vue";
 import type { FormInstance, FormRules } from "element-plus";
+
+/** 站点信息属于内容域（admin.content.*），系统设置页只对有内容权限的账号展示该 section */
+const canReadContent = computed(() => hasPerms("admin.content.read"));
+const { locales } = useContentLocales();
 
 defineOptions({ name: "SystemSettingsPage" });
 
@@ -79,7 +96,7 @@ const rules: FormRules = {
   ]
 };
 
-/** 左侧分类导航：与原单页表单的三个分组一一对应 */
+/** 左侧分类导航：平台身份/注册登录/邮件 SMTP 来自系统设置；站点信息来自内容站点设置 */
 const sections = [
   {
     key: "platform",
@@ -95,10 +112,20 @@ const sections = [
     key: "email",
     title: "邮件与 SMTP",
     description: "邮箱验证与发信服务器"
+  },
+  {
+    key: "site",
+    title: "站点信息",
+    description: "站点名称、Logo、联系方式与 SEO"
   }
 ] as const;
 
 type SectionKey = (typeof sections)[number]["key"];
+
+/** 无 admin.content.read 时隐藏站点信息（其接口由内容域权限守卫） */
+const visibleSections = computed(() =>
+  sections.filter(section => section.key !== "site" || canReadContent.value)
+);
 
 const activeSection = ref<SectionKey>("platform");
 
@@ -218,10 +245,143 @@ async function save() {
   });
 }
 
+// ---------- 站点信息（内容域 /site-settings，带 version 乐观锁） ----------
+const siteTranslationFields: TranslationFieldDef[] = [
+  { key: "tagline", label: "标语" },
+  { key: "footer_text", label: "页脚文案", type: "textarea", rows: 3 },
+  { key: "seo_default_title", label: "默认 SEO 标题" },
+  {
+    key: "seo_default_description",
+    label: "默认 SEO 描述",
+    type: "textarea",
+    rows: 3
+  },
+  { key: "icp_record", label: "备案号" }
+];
+
+const siteLoading = ref(false);
+const siteSaving = ref(false);
+
+const siteForm = reactive({
+  site_name: "",
+  logo_url: "",
+  logo_dark_url: "",
+  favicon_url: "",
+  contact_email: "",
+  contact_phone: "",
+  contact_address: "",
+  seo_default_og_image_url: "",
+  default_locale: "",
+  social_links: [] as Array<{ platform: string; url: string }>,
+  translations: {} as TranslationMap,
+  version: 0
+});
+
+function addSocialLink() {
+  siteForm.social_links.push({ platform: "", url: "" });
+}
+
+function removeSocialLink(index: number) {
+  siteForm.social_links.splice(index, 1);
+}
+
+function compactSocialLinks(): Array<{ platform: string; url: string }> {
+  return siteForm.social_links
+    .map(link => ({ platform: link.platform.trim(), url: link.url.trim() }))
+    .filter(link => link.platform || link.url);
+}
+
+async function loadSiteSettings() {
+  if (!canReadContent.value) return;
+  siteLoading.value = true;
+  try {
+    const res = await getSiteSettingsApi();
+    const s = res?.data;
+    if (!s) return;
+    Object.assign(siteForm, {
+      site_name: s.site_name,
+      logo_url: s.logo_url ?? "",
+      logo_dark_url: s.logo_dark_url ?? "",
+      favicon_url: s.favicon_url ?? "",
+      contact_email: s.contact_email ?? "",
+      contact_phone: s.contact_phone ?? "",
+      contact_address: s.contact_address ?? "",
+      seo_default_og_image_url: s.seo_default_og_image_url ?? "",
+      default_locale: s.default_locale,
+      social_links: (s.social_links ?? []).map(link => ({
+        platform: link.platform ?? "",
+        url: link.url ?? ""
+      })),
+      translations: JSON.parse(JSON.stringify(s.translations ?? {})),
+      version: s.version
+    });
+  } catch (error) {
+    message(getErrorMessage(error), { type: "error" });
+  } finally {
+    siteLoading.value = false;
+  }
+}
+
+async function saveSite() {
+  if (!siteForm.site_name.trim()) {
+    message("请填写站点名称", { type: "warning" });
+    return;
+  }
+  if (!siteForm.default_locale) {
+    message("请选择默认语言", { type: "warning" });
+    return;
+  }
+  siteSaving.value = true;
+  try {
+    const res = await updateSiteSettingsApi({
+      site_name: siteForm.site_name.trim(),
+      logo_url: siteForm.logo_url,
+      logo_dark_url: siteForm.logo_dark_url,
+      favicon_url: siteForm.favicon_url,
+      contact_email: siteForm.contact_email,
+      contact_phone: siteForm.contact_phone,
+      contact_address: siteForm.contact_address,
+      social_links: compactSocialLinks(),
+      seo_default_og_image_url: siteForm.seo_default_og_image_url,
+      default_locale: siteForm.default_locale,
+      translations: compactTranslations(siteForm.translations),
+      version: siteForm.version
+    });
+    const s = res?.data;
+    if (s) {
+      siteForm.version = s.version;
+      siteForm.translations = JSON.parse(JSON.stringify(s.translations ?? {}));
+    }
+    message("站点信息已保存", { type: "success" });
+  } catch (error) {
+    if (getErrorCode(error) === 40013) {
+      message("内容已被他人修改，请刷新后重试", { type: "warning" });
+    } else {
+      message(getErrorMessage(error), { type: "error" });
+    }
+  } finally {
+    siteSaving.value = false;
+  }
+}
+
 onMounted(async () => {
   await loadLevels();
   await loadSettings();
+  if (canReadContent.value) {
+    try {
+      await loadContentLocales();
+    } catch {
+      // 语言列表失败时回退，仍可编辑
+    }
+    await loadSiteSettings();
+  }
 });
+
+/** 顶部「重新载入」按当前 section 重新拉取对应资源 */
+function reloadActive() {
+  if (activeSection.value === "site") return loadSiteSettings();
+  return loadSettings();
+}
 </script>
 
 <template>
@@ -229,7 +389,10 @@ onMounted(async () => {
     <div class="panel-container">
       <div class="panel-header">
         <span class="panel-title">系统设置</span>
-        <el-button text :loading="loading" @click="loadSettings"
+        <el-button
+          text
+          :loading="activeSection === 'site' ? siteLoading : loading"
+          @click="reloadActive"
           >重新载入</el-button
         >
       </div>
@@ -237,7 +400,7 @@ onMounted(async () => {
         <!-- 左侧：分类导航 -->
         <nav class="settings-nav" aria-label="设置分类">
           <button
-            v-for="section in sections"
+            v-for="section in visibleSections"
             :key="section.key"
             type="button"
             class="settings-nav-item"
@@ -401,11 +564,101 @@ onMounted(async () => {
             </template>
           </div>
 
+          <div
+            v-show="activeSection === 'site'"
+            v-loading="siteLoading"
+            class="settings-section"
+          >
+            <h4 class="settings-section-title">
+              站点信息
+              <span class="text-xs text-secondary ml-2">
+                版本 {{ siteForm.version }}
+              </span>
+            </h4>
+            <el-form-item label="站点名称">
+              <el-input v-model="siteForm.site_name" />
+            </el-form-item>
+            <el-form-item label="Logo（浅色）">
+              <MediaPicker v-model="siteForm.logo_url" />
+            </el-form-item>
+            <el-form-item label="Logo（深色）">
+              <MediaPicker v-model="siteForm.logo_dark_url" />
+            </el-form-item>
+            <el-form-item label="Favicon">
+              <MediaPicker v-model="siteForm.favicon_url" />
+            </el-form-item>
+            <el-form-item label="默认 OG 图片">
+              <MediaPicker v-model="siteForm.seo_default_og_image_url" />
+            </el-form-item>
+            <el-form-item label="联系邮箱">
+              <el-input v-model="siteForm.contact_email" />
+            </el-form-item>
+            <el-form-item label="联系电话">
+              <el-input v-model="siteForm.contact_phone" />
+            </el-form-item>
+            <el-form-item label="联系地址">
+              <el-input v-model="siteForm.contact_address" />
+            </el-form-item>
+            <el-form-item label="默认语言">
+              <el-select v-model="siteForm.default_locale" style="width: 220px">
+                <el-option
+                  v-for="loc in locales"
+                  :key="loc.code"
+                  :label="`${loc.label}（${loc.code}）`"
+                  :value="loc.code"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="社交链接">
+              <div class="social-list">
+                <div
+                  v-for="(link, index) in siteForm.social_links"
+                  :key="index"
+                  class="social-row"
+                >
+                  <el-input
+                    v-model="link.platform"
+                    placeholder="平台，如 github"
+                    style="width: 180px"
+                  />
+                  <el-input
+                    v-model="link.url"
+                    placeholder="https://..."
+                    style="flex: 1"
+                  />
+                  <el-button
+                    link
+                    type="danger"
+                    @click="removeSocialLink(index)"
+                  >
+                    移除
+                  </el-button>
+                </div>
+                <el-button link type="primary" @click="addSocialLink">
+                  添加社交链接
+                </el-button>
+              </div>
+            </el-form-item>
+            <LocaleTranslationTabs
+              v-model:translations="siteForm.translations"
+              :locales="locales"
+              :fields="siteTranslationFields"
+            />
+          </div>
+
           <el-form-item class="settings-actions">
-            <el-button type="primary" :loading="saving" @click="save"
-              >保存设置</el-button
-            >
-            <el-button @click="loadSettings">放弃修改</el-button>
+            <template v-if="activeSection === 'site'">
+              <el-button type="primary" :loading="siteSaving" @click="saveSite">
+                保存站点信息
+              </el-button>
+              <el-button @click="loadSiteSettings">放弃修改</el-button>
+            </template>
+            <template v-else>
+              <el-button type="primary" :loading="saving" @click="save">
+                保存设置
+              </el-button>
+              <el-button @click="loadSettings">放弃修改</el-button>
+            </template>
           </el-form-item>
         </el-form>
       </div>
@@ -522,5 +775,18 @@ onMounted(async () => {
 .settings-actions {
   margin-top: 8px;
   margin-bottom: 0;
+}
+
+.social-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.social-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 </style>
