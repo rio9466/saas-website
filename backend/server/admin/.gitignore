@@ -20,3 +20,10 @@ tests/**/coverage/
 *.njsproj
 *.sln
 tsconfig.tsbuildinfo
+
+# The admin console needs these VITE_* config files to boot. They carry no
+# secrets, so re-include them even though the repo root .gitignore excludes
+# `.env`/`.env.*` globally.
+!.env
+!.env.development
+!.env.production
