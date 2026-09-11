@@ -1,0 +1,16 @@
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Editors
+.idea/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Dependencies (subprojects keep their own .gitignore too)
+node_modules/
