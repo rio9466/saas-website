@@ -30,6 +30,26 @@ type userLoginRequest struct {
 	Password   string `json:"password"`
 }
 
+type userUpdateProfileRequest struct {
+	Nickname  *string `json:"nickname"`
+	AvatarURL *string `json:"avatar_url"`
+}
+
+type userChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
+type userForgotPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+type userResetPasswordRequest struct {
+	Email       string `json:"email"`
+	Token       string `json:"token"`
+	NewPassword string `json:"new_password"`
+}
+
 type createBusinessUserRequest struct {
 	Username string  `json:"username"`
 	Email    string  `json:"email"`

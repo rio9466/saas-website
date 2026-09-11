@@ -23,6 +23,10 @@ const (
 	resendLimit    = 3
 	verifyWindow   = time.Hour
 	verifyLimit    = 10
+	forgotWindow   = time.Hour
+	forgotLimit    = 3
+	resetWindow    = time.Hour
+	resetLimit     = 10
 	rateKeyPrefix  = "easy-admin:rl:"
 )
 
@@ -38,6 +42,12 @@ func rateKeyLoginByID(identifier string) string {
 }
 func rateKeyResend(ip string) string     { return rateKey("resend:" + ip) }
 func rateKeyVerifyByIP(ip string) string { return rateKey("verify:" + ip) }
+func rateKeyForgotByIP(ip string) string { return rateKey("forgot-ip:" + ip) }
+func rateKeyResetByIP(ip string) string  { return rateKey("reset-ip:" + ip) }
+func rateKeyForgotByEmail(email string) string {
+	sum := sha256.Sum256([]byte(strings.ToLower(strings.TrimSpace(email))))
+	return rateKey("forgot-email:" + hex.EncodeToString(sum[:]))
+}
 
 // allowRate wraps the limiter and maps storage failures to a fail-closed
 // "rate limited" AppError so protected endpoints never bypass throttling.

@@ -19,6 +19,10 @@ import (
 // the configuration does not override it.
 const DefaultVerificationTokenTTL = 24 * 60 * 60 * 1_000_000_000 // 24h in nanoseconds
 
+// DefaultResetTokenTTL bounds one-time password-reset tokens when the
+// configuration does not override it. The contract documents a one-hour TTL.
+const DefaultResetTokenTTL = 60 * 60 * 1_000_000_000 // 1h in nanoseconds
+
 // Password hashing/dummy-credential configuration mirrors the administrator
 // surface so unknown-user logins burn equivalent work.
 const dummyCredential = "easy-admin-usr-001-dummy-credential-do-not-use"
@@ -32,6 +36,9 @@ type Options struct {
 	// VerificationTokenTTL bounds one-time verification tokens; zero uses the
 	// documented default of 24 hours.
 	VerificationTokenTTL int64 // nanoseconds
+	// ResetTokenTTL bounds one-time password-reset tokens; zero uses the
+	// documented default of 1 hour.
+	ResetTokenTTL int64 // nanoseconds
 	// Environment reflects the deployment environment (development/production).
 	Environment string
 	// NewMailer builds the SMTP mailer for verification emails. Nil uses
@@ -71,6 +78,7 @@ type Service struct {
 	opts      Options
 	dummyHash string
 	verifyTTL int64
+	resetTTL  int64
 	newMailer func(cfg mailer.Settings) (mailer.Mailer, error)
 }
 
@@ -107,6 +115,10 @@ func New(users *primary.UserRepository, admins *primary.AdminRepository, audits 
 	if ttl <= 0 {
 		ttl = DefaultVerificationTokenTTL
 	}
+	resetTTL := opts.ResetTokenTTL
+	if resetTTL <= 0 {
+		resetTTL = DefaultResetTokenTTL
+	}
 	newMailer := opts.NewMailer
 	if newMailer == nil {
 		newMailer = func(cfg mailer.Settings) (mailer.Mailer, error) {
@@ -126,6 +138,7 @@ func New(users *primary.UserRepository, admins *primary.AdminRepository, audits 
 		opts:      opts,
 		dummyHash: dummy,
 		verifyTTL: ttl,
+		resetTTL:  resetTTL,
 		newMailer: newMailer,
 	}, nil
 }

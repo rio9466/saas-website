@@ -79,6 +79,8 @@ func NewRouter(deps Dependencies) *gin.Engine {
 			userAuth.POST("/register", userAuthHandlers.Register)
 			userAuth.POST("/verify-email", userAuthHandlers.VerifyEmail)
 			userAuth.POST("/resend-verification", userAuthHandlers.ResendVerification)
+			userAuth.POST("/forgot-password", userAuthHandlers.ForgotPassword)
+			userAuth.POST("/reset-password", userAuthHandlers.ResetPassword)
 			userAuth.POST("/login", userAuthHandlers.Login)
 			userAuth.POST("/refresh", userAuthHandlers.Refresh)
 			userAuth.POST("/logout", userAuthenticate, userAuthHandlers.Logout)
@@ -88,6 +90,9 @@ func NewRouter(deps Dependencies) *gin.Engine {
 		me.Use(userAuthenticate)
 		{
 			me.GET("", userAuthHandlers.Me)
+			me.PATCH("", userAuthHandlers.UpdateMe)
+			me.POST("/password", userAuthHandlers.ChangePassword)
+			me.GET("/point-transactions", userAuthHandlers.MyPointTransactions)
 		}
 	}
 
