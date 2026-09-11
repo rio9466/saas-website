@@ -7,6 +7,14 @@
 - Define verifiable success criteria for non-trivial work. Prefer reproducing bugs with tests, then fixing them. Run relevant tests or explain why they could not be run.
 - Surface tradeoffs and uncertainty clearly. Do not hide confusion or silently pick among materially different interpretations.
 
+# Roles (who does what)
+
+- **Conversation pi** — runs on `master` (this checkout). Only dialogue, workflow guidance, acceptance review, and `master-relay` → `master` merges with explicit user approval. Never writes business code and never commits to `master` otherwise. May edit process/rule docs on `master-relay`.
+- **Orchestrator pi** — runs on `master-relay`. Writes the PRD and task docs, maintains `docs/tasks/STATUS.md`, creates task branches, and merges task branches into `master-relay`.
+- **Executor pi** — runs on a `<task>` branch. Implements one task, reports command + result, never merges.
+
+See `ORCA_WORKFLOW.md` §2 for the full role contract.
+
 # Document ownership (strong rules)
 
 - Cross-cutting documents are owned by the main line (`master-relay`, later published to `master`): the PRD (`docs/prd/`), ADRs (`docs/adr/`), architecture, this root `AGENTS.md`, and `ORCA_WORKFLOW.md`.
