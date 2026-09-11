@@ -121,7 +121,7 @@ type adminHomeSectionRequest struct {
 	Type         *string                   `json:"type"`
 	SortOrder    *int                      `json:"sort_order"`
 	Published    *bool                     `json:"published"`
-	Payload      map[string]any            `json:"payload"`
+	Payload      map[string]any            `json:"data"`
 	Translations map[string]map[string]any `json:"translations"`
 }
 
@@ -414,7 +414,7 @@ type adminHomeSectionData struct {
 	Type         string                    `json:"type"`
 	SortOrder    int                       `json:"sort_order"`
 	Published    bool                      `json:"published"`
-	Payload      map[string]any            `json:"payload"`
+	Payload      map[string]any            `json:"data"`
 	Translations map[string]map[string]any `json:"translations"`
 	CreatedAt    string                    `json:"created_at"`
 	UpdatedAt    string                    `json:"updated_at"`

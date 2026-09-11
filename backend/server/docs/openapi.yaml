@@ -3564,13 +3564,13 @@ components:
             $ref: '#/components/schemas/NavigationTranslation'
     HomeSection:
       type: object
-      required: [id, type, sort_order, published, payload, translations, created_at, updated_at]
+      required: [id, type, sort_order, published, data, translations, created_at, updated_at]
       properties:
         id: { type: string }
         type: { type: string }
         sort_order: { type: integer }
         published: { type: boolean }
-        payload: { type: object, additionalProperties: true, description: "Non-translatable base data merged under each locale" }
+        data: { type: object, additionalProperties: true, description: "Non-translatable base data merged under each locale" }
         translations:
           type: object
           additionalProperties:
@@ -3609,7 +3609,7 @@ components:
         type: { type: string, minLength: 1 }
         sort_order: { type: integer }
         published: { type: boolean }
-        payload: { type: object, additionalProperties: true }
+        data: { type: object, additionalProperties: true }
         translations:
           type: object
           additionalProperties:
