@@ -2,6 +2,7 @@
 const { t } = useI18n()
 const route = useRoute()
 const { verifyEmail, resendVerification } = useAuth()
+const localePath = useLocalePath()
 
 const email = computed(() => String(route.query.email || '').trim())
 const token = computed(() => String(route.query.token || '').trim())
@@ -62,7 +63,7 @@ useSeo({ title: t('auth.verifyEmail.title') })
     >
       <template #actions>
         <UButton
-          to="/login"
+          :to="localePath('/login')"
           color="primary"
           variant="soft"
         >
@@ -93,7 +94,7 @@ useSeo({ title: t('auth.verifyEmail.title') })
             {{ resent ? t('auth.verifyEmail.resent') : t('auth.verifyEmail.resend') }}
           </UButton>
           <UButton
-            to="/login"
+            :to="localePath('/login')"
             color="neutral"
             variant="outline"
           >

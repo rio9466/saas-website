@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const { forgotPassword } = useAuth()
+const localePath = useLocalePath()
 
 const email = ref('')
 const error = ref('')
@@ -55,7 +56,7 @@ useSeo({ title: t('auth.forgot.title'), description: t('auth.forgot.subtitle') }
     >
       <template #actions>
         <UButton
-          to="/login"
+          :to="localePath('/login')"
           color="neutral"
           variant="outline"
         >
@@ -102,12 +103,12 @@ useSeo({ title: t('auth.forgot.title'), description: t('auth.forgot.subtitle') }
       </UButton>
 
       <p class="text-center text-sm text-muted">
-        <NuxtLink
+        <AppLink
           to="/login"
           class="text-primary hover:underline"
         >
           {{ t('auth.forgot.backToLogin') }}
-        </NuxtLink>
+        </AppLink>
       </p>
     </form>
   </div>

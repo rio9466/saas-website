@@ -4,6 +4,7 @@ const route = useRoute()
 const router = useRouter()
 const { login, resendVerification } = useAuth()
 const { settings } = useSiteSettings()
+const localePath = useLocalePath()
 
 const form = reactive({
   identifier: typeof route.query.identifier === 'string' ? route.query.identifier : '',
@@ -62,7 +63,7 @@ async function submit() {
   submitting.value = true
   try {
     await login({ identifier: form.identifier.trim(), password: form.password })
-    await router.push(safeRedirect(route.query.redirect) || '/account')
+    await router.push(safeRedirect(route.query.redirect) || localePath('/account'))
   } catch (error) {
     if (error instanceof ApiError && error.code === 40011) {
       unverified.value = true
@@ -207,12 +208,12 @@ useSeo({ title: t('auth.login.title'), description: t('auth.login.subtitle') })
       </UFormField>
 
       <div class="flex items-center justify-between">
-        <NuxtLink
+        <AppLink
           to="/forgot-password"
           class="text-sm text-primary hover:underline"
         >
           {{ t('auth.login.forgot') }}
-        </NuxtLink>
+        </AppLink>
       </div>
 
       <UButton
@@ -230,12 +231,12 @@ useSeo({ title: t('auth.login.title'), description: t('auth.login.subtitle') })
         class="text-center text-sm text-muted"
       >
         {{ t('auth.login.noAccount') }}
-        <NuxtLink
+        <AppLink
           to="/register"
           class="text-primary hover:underline"
         >
           {{ t('auth.login.signUp') }}
-        </NuxtLink>
+        </AppLink>
       </p>
     </form>
   </div>

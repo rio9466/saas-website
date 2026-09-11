@@ -3,6 +3,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { user, isAuthenticated, restoreSession, logout } = useAuth()
+const localePath = useLocalePath()
 
 const hydrated = ref(false)
 
@@ -13,7 +14,7 @@ onMounted(async () => {
   if (!isAuthenticated.value) {
     const restored = await restoreSession()
     if (!restored) {
-      await router.replace({ path: '/login', query: { redirect: route.fullPath } })
+      await router.replace({ path: localePath('/login'), query: { redirect: route.fullPath } })
       return
     }
   }
@@ -21,21 +22,22 @@ onMounted(async () => {
 })
 
 const navItems = computed(() => [
-  { label: t('account.nav.overview'), to: '/account', icon: 'i-lucide-layout-dashboard' },
-  { label: t('account.nav.points'), to: '/account/points', icon: 'i-lucide-coins' },
-  { label: t('account.nav.security'), to: '/account/security', icon: 'i-lucide-shield-check' },
-  { label: t('account.nav.profile'), to: '/account/profile', icon: 'i-lucide-user-round' }
+  { label: t('account.nav.overview'), path: '/account', to: localePath('/account'), icon: 'i-lucide-layout-dashboard' },
+  { label: t('account.nav.points'), path: '/account/points', to: localePath('/account/points'), icon: 'i-lucide-coins' },
+  { label: t('account.nav.security'), path: '/account/security', to: localePath('/account/security'), icon: 'i-lucide-shield-check' },
+  { label: t('account.nav.profile'), path: '/account/profile', to: localePath('/account/profile'), icon: 'i-lucide-user-round' }
 ])
 
 const showLoading = computed(() => !hydrated.value || !user.value)
 
 async function onLogout() {
   await logout()
-  await router.push('/')
+  await router.push(localePath('/'))
 }
 
 function isActive(path: string) {
-  return path === '/account' ? route.path === '/account' : route.path.startsWith(path)
+  const localized = localePath(path)
+  return path === '/account' ? route.path === localized : route.path.startsWith(localized)
 }
 </script>
 
@@ -63,11 +65,11 @@ function isActive(path: string) {
           <nav class="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
             <UButton
               v-for="item in navItems"
-              :key="item.to"
+              :key="item.path"
               :to="item.to"
               :icon="item.icon"
-              :color="isActive(item.to) ? 'primary' : 'neutral'"
-              :variant="isActive(item.to) ? 'soft' : 'ghost'"
+              :color="isActive(item.path) ? 'primary' : 'neutral'"
+              :variant="isActive(item.path) ? 'soft' : 'ghost'"
               class="shrink-0 justify-start"
             >
               {{ item.label }}

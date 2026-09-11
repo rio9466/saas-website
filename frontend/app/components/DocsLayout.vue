@@ -7,6 +7,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const localePath = useLocalePath()
 
 const toc = computed(() => renderMarkdown(props.article.body_md).toc.filter(link => link.level >= 2 && link.level <= 3))
 
@@ -39,7 +40,7 @@ const activeCategorySlug = computed(() => props.article.category?.slug ?? '')
               :key="item.id"
             >
               <NuxtLink
-                :to="`/docs/${item.slug}`"
+                :to="localePath(`/docs/${item.slug}`)"
                 class="block rounded-md px-3 py-1.5 text-sm transition-colors"
                 :class="item.slug === activeSlug
                   ? 'bg-muted font-medium text-primary'
@@ -59,12 +60,12 @@ const activeCategorySlug = computed(() => props.article.category?.slug ?? '')
         class="flex flex-wrap items-center gap-1 text-sm text-muted"
         :aria-label="t('docs.breadcrumb')"
       >
-        <NuxtLink
+        <AppLink
           to="/docs"
           class="hover:text-highlighted"
         >
           {{ t('nav.docs') }}
-        </NuxtLink>
+        </AppLink>
         <span v-if="article.category?.name">/</span>
         <span v-if="article.category?.name">{{ article.category.name }}</span>
       </nav>
@@ -94,7 +95,7 @@ const activeCategorySlug = computed(() => props.article.category?.slug ?? '')
       >
         <NuxtLink
           v-if="article.prev"
-          :to="`/docs/${article.prev.slug}`"
+          :to="localePath(`/docs/${article.prev.slug}`)"
           class="flex flex-col gap-1 rounded-lg border border-default p-4 hover:border-primary"
         >
           <span class="text-xs text-dimmed">{{ t('docs.previous') }}</span>
@@ -102,7 +103,7 @@ const activeCategorySlug = computed(() => props.article.category?.slug ?? '')
         </NuxtLink>
         <NuxtLink
           v-if="article.next"
-          :to="`/docs/${article.next.slug}`"
+          :to="localePath(`/docs/${article.next.slug}`)"
           class="flex flex-col gap-1 rounded-lg border border-default p-4 hover:border-primary sm:col-start-2 sm:text-right"
         >
           <span class="text-xs text-dimmed">{{ t('docs.next') }}</span>

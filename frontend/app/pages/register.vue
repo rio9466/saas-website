@@ -3,6 +3,7 @@ const { t } = useI18n()
 const { register, resendVerification } = useAuth()
 const { settings } = useSiteSettings()
 const router = useRouter()
+const localePath = useLocalePath()
 
 const form = reactive({
   username: '',
@@ -62,7 +63,7 @@ async function submit() {
       created.value = user.email
       status.value = 'pending'
     } else {
-      await router.push({ path: '/login', query: { identifier: user.username, registered: '1' } })
+      await router.push({ path: localePath('/login'), query: { identifier: user.username, registered: '1' } })
     }
   } catch (error) {
     formError.value = error instanceof ApiError
@@ -127,7 +128,7 @@ useSeo({ title: t('auth.register.title'), description: t('auth.register.subtitle
             {{ resent ? t('auth.register.resent') : t('auth.register.resend') }}
           </UButton>
           <UButton
-            to="/login"
+            :to="localePath('/login')"
             color="neutral"
             variant="outline"
           >
@@ -215,12 +216,12 @@ useSeo({ title: t('auth.register.title'), description: t('auth.register.subtitle
 
       <p class="text-center text-sm text-muted">
         {{ t('auth.register.haveAccount') }}
-        <NuxtLink
+        <AppLink
           to="/login"
           class="text-primary hover:underline"
         >
           {{ t('auth.register.login') }}
-        </NuxtLink>
+        </AppLink>
       </p>
     </form>
   </div>

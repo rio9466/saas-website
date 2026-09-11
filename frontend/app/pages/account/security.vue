@@ -4,6 +4,7 @@ definePageMeta({ layout: 'account', middleware: 'auth' })
 const { t } = useI18n()
 const router = useRouter()
 const { changePassword } = useAuth()
+const localePath = useLocalePath()
 
 const form = reactive({
   current: '',
@@ -38,7 +39,7 @@ async function submit() {
   submitting.value = true
   try {
     await changePassword(form.current, form.next)
-    await router.push({ path: '/login', query: { changed: '1' } })
+    await router.push({ path: localePath('/login'), query: { changed: '1' } })
   } catch (error) {
     if (error instanceof ApiError && error.code === 40005) {
       errors.current = t('errorCodes.40005')
