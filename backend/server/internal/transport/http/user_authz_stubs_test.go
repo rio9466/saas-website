@@ -49,6 +49,24 @@ func (s *stubUserClient) Me(context.Context, handler.Actor, int64) (*userdomain.
 	return &userdomain.User{ID: 1, Username: "stub", Status: userdomain.StatusActive}, nil
 }
 
+func (s *stubUserClient) UpdateProfile(context.Context, handler.Actor, handler.UserUpdateProfileInput) (*userdomain.User, error) {
+	return &userdomain.User{ID: 1, Username: "stub", Status: userdomain.StatusActive}, nil
+}
+
+func (s *stubUserClient) ChangePassword(context.Context, handler.Actor, string, string) error {
+	return nil
+}
+
+func (s *stubUserClient) ListMyPointTransactions(context.Context, handler.Actor, int, int) (adminauth.Page[userdomain.PointTransaction], error) {
+	return adminauth.Page[userdomain.PointTransaction]{Items: []userdomain.PointTransaction{}}, nil
+}
+
+func (s *stubUserClient) ForgotPassword(context.Context, handler.Actor, string) error { return nil }
+
+func (s *stubUserClient) ResetPassword(context.Context, handler.Actor, string, string, string) error {
+	return nil
+}
+
 // stubUserAdmin implements handler.UserAdminService for routing tests.
 type stubUserAdmin struct{}
 

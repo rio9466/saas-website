@@ -37,6 +37,13 @@ type UserRegisterInput struct {
 	Password string
 }
 
+// UserUpdateProfileInput is the self-service profile update (nickname and
+// avatar_url only).
+type UserUpdateProfileInput struct {
+	Nickname  *string
+	AvatarURL *string
+}
+
 // UserClientService is the transport-facing public/user auth surface.
 type UserClientService interface {
 	middleware.UserAuthzLoader
@@ -49,6 +56,11 @@ type UserClientService interface {
 	Refresh(ctx context.Context, actor Actor, refreshToken string) (*UserLoginResult, *userdomain.User, error)
 	Logout(ctx context.Context, actor Actor) error
 	Me(ctx context.Context, actor Actor, userID int64) (*userdomain.User, error)
+	UpdateProfile(ctx context.Context, actor Actor, in UserUpdateProfileInput) (*userdomain.User, error)
+	ChangePassword(ctx context.Context, actor Actor, currentPassword, newPassword string) error
+	ListMyPointTransactions(ctx context.Context, actor Actor, page, pageSize int) (adminauth.Page[userdomain.PointTransaction], error)
+	ForgotPassword(ctx context.Context, actor Actor, email string) error
+	ResetPassword(ctx context.Context, actor Actor, email, token, newPassword string) error
 }
 
 // UserListInput filters the business-user page.

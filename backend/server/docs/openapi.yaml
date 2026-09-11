@@ -948,6 +948,193 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/AccountDisabled'
+    patch:
+      tags: [user-profile]
+      summary: Update the current user's nickname and/or avatar
+      description: |
+        At least one of nickname or avatar_url is required. username, email,
+        points, level, and status are never bound to this request and cannot be
+        changed here. avatar_url accepts an absolute http/https URL or a
+        root-relative path.
+      operationId: updateMe
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname: { type: string, minLength: 1 }
+                avatar_url: { type: string }
+      responses:
+        '200':
+          description: Updated profile (same shape as GET /me)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountDisabled'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/me/password:
+    post:
+      tags: [user-profile]
+      summary: Change the current user's password
+      description: |
+        Verifies the current password, stores the new hash (8-72 UTF-8 bytes),
+        and revokes every session for the user (auth_epoch bump). The response
+        clears the refresh cookie; the client must drop the in-memory access
+        token and log in again.
+      operationId: changeMyPassword
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: { type: string, format: password }
+                new_password: { type: string, format: password, minLength: 8, maxLength: 72, description: "UTF-8 encoded byte length between 8 and 72" }
+      responses:
+        '200':
+          description: Password changed; cookies cleared and sessions revoked
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+            Set-Cookie:
+              description: Cleared HttpOnly user refresh cookie
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountDisabled'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/me/point-transactions:
+    get:
+      tags: [user-profile]
+      summary: List the current user's point transactions
+      description: Only the authenticated user's own ledger, newest first.
+      operationId: listMyPointTransactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Paginated ledger
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointTransactionPageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountDisabled'
+  /api/v1/auth/forgot-password:
+    post:
+      tags: [user-auth]
+      summary: Request a password-reset email
+      description: |
+        Always returns 200 for valid input whether or not the address exists,
+        so account existence is never revealed. A one-time token is stored as a
+        sha256 digest under easy-admin:user-reset:{id} with a 1-hour default
+        TTL and emailed when the account exists. SMTP failures are logged and
+        never distinguish the address. Rate-limited per IP and per address
+        (3/hour each); Redis failures fail closed as 42901.
+      operationId: userForgotPassword
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Always success for valid input (existence never revealed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/v1/auth/reset-password:
+    post:
+      tags: [user-auth]
+      summary: Reset a password with a one-time token
+      description: |
+        Consumes the single-use token (atomic compare-and-delete), stores the
+        new password (8-72 UTF-8 bytes), bumps auth_epoch, and revokes every
+        session. A wrong, expired, or replayed token returns 40016. Rate-limited
+        per IP (10/hour); Redis failures fail closed as 42901.
+      operationId: userResetPassword
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, token, new_password]
+              properties:
+                email: { type: string, format: email }
+                token: { type: string, minLength: 1 }
+                new_password: { type: string, format: password, minLength: 8, maxLength: 72 }
+      responses:
+        '200':
+          description: Password reset; sessions revoked
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+            Set-Cookie:
+              description: Cleared HttpOnly user refresh cookie
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '400':
+          description: Invalid/expired/used token (40016) or validation failed (10001)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/VerificationInvalidError'
+                  - $ref: '#/components/schemas/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
   /api/v1/admin/users:
     get:
       tags: [admin-business-users]

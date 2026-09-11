@@ -22,6 +22,7 @@ const (
 	ActionUserEnable             = "user.enable"
 	ActionUserDisable            = "user.disable"
 	ActionUserResetPassword      = "user.reset_password"
+	ActionUserChangePassword     = "user.change_password"
 	ActionUserPointsAdjust       = "user.points_adjust"
 	ActionUserLevelAssign        = "user.level_assign"
 	ActionUserLevelCreate        = "user_level.create"
