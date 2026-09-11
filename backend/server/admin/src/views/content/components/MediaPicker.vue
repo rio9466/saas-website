@@ -100,17 +100,29 @@ function onPageChange(value: number) {
 
 <template>
   <div class="media-picker">
-    <el-input
-      :model-value="modelValue"
-      :placeholder="placeholder"
-      clearable
-      @update:model-value="value => emit('update:modelValue', value)"
-    >
-      <template #append>
-        <el-button :disabled="uploading" @click="openPicker">媒体库</el-button>
-        <el-button :loading="uploading" @click="pickFile">上传</el-button>
-      </template>
-    </el-input>
+    <div class="media-picker__row">
+      <el-input
+        class="media-picker__input"
+        :model-value="modelValue"
+        :placeholder="placeholder"
+        clearable
+        @update:model-value="value => emit('update:modelValue', value)"
+      />
+      <el-button
+        class="media-picker__action"
+        :disabled="uploading"
+        @click="openPicker"
+      >
+        媒体库
+      </el-button>
+      <el-button
+        class="media-picker__action"
+        :loading="uploading"
+        @click="pickFile"
+      >
+        上传
+      </el-button>
+    </div>
     <input
       ref="fileInput"
       type="file"
@@ -168,6 +180,30 @@ function onPageChange(value: number) {
 </template>
 
 <style scoped>
+.media-picker {
+  width: 100%;
+}
+
+.media-picker__row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.media-picker__input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.media-picker__action {
+  flex: none;
+}
+
+.media-picker__row :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+
 .hidden-file {
   display: none;
 }

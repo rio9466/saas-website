@@ -9,6 +9,7 @@ import { onMounted, ref, watch, toRaw, onUnmounted } from "vue";
  * Vditor Markdown 编辑器（移植自上游 vue-pure-admin 的
  * src/views/markdown/components/Vditor.vue）。
  * - `v-model` 双向绑定 Markdown 源文本；
+ * - `height` 固定编辑器高度（默认 360px），内容超出在编辑器内部上下滚动；
  * - 跟随亮/暗主题自动 `setTheme`（初始挂载也按当前主题渲染）；
  * - `cache.enable=false`：不落本地缓存，避免同一页面多个语言 Tab 互相串内容；
  * - `onUnmounted` 销毁实例，释放 DOM 与轮询。
@@ -18,10 +19,12 @@ defineOptions({ name: "MarkdownEditor" });
 const props = withDefaults(
   defineProps<{
     modelValue?: string;
+    /** 编辑器固定高度（px），内容超出在编辑器内部上下滚动 */
+    height?: number;
     /** 透传给 Vditor 的原始 options（cache/fullscreen 由本组件固定） */
     options?: Record<string, any>;
   }>(),
-  { modelValue: "", options: () => ({}) }
+  { modelValue: "", height: 360, options: () => ({}) }
 );
 
 const emit = defineEmits<{
@@ -42,6 +45,7 @@ onMounted(() => {
   editor.value = new Vditor(markdownRef.value as HTMLElement, {
     ...props.options,
     value: props.modelValue,
+    height: props.height,
     cache: {
       enable: false
     },
