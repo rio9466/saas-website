@@ -38,7 +38,15 @@ export default defineNuxtConfig({
 
   routeRules: {
     // Browser traffic always stays same-origin; Nitro proxies /api/** to the Go service.
-    '/api/**': { proxy: `${apiProxyTarget}/api/**` }
+    '/api/**': { proxy: `${apiProxyTarget}/api/**` },
+    // Public content pages are cached (ISR-style) for the same window as the
+    // backend `Cache-Control: max-age=60` (contract §7.4).
+    '/': { swr: 60 },
+    '/features': { swr: 60 },
+    '/pricing': { swr: 60 },
+    '/contact': { swr: 60 },
+    '/docs': { swr: 60 },
+    '/docs/**': { swr: 60 }
   },
 
   compatibilityDate: '2026-06-30',
@@ -62,5 +70,17 @@ export default defineNuxtConfig({
       { code: 'en', language: 'en-US', file: 'en.json' },
       { code: 'zh-CN', language: 'zh-CN', file: 'zh-CN.json' }
     ]
+  },
+
+  // Icons must render during SSR in the standalone Node output. The local icon
+  // endpoint defaults to /api/_nuxt_icon, which the /api/** proxy above would
+  // forward to the Go backend (breaking SSR icons), so move it off /api/**.
+  icon: {
+    localApiEndpoint: '/_nuxt_icon',
+    mode: 'svg',
+    clientBundle: {
+      scan: true,
+      sizeLimitKb: 512
+    }
   }
 })
