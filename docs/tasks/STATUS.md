@@ -25,6 +25,9 @@
 | FIX-FE-I18N | 前端：内部跳转本地化 + Pinia 持久化语言/主题 | `fix-fe-i18n-links` | `master-relay` | — | done | 已合入 53fd452 |
 | ADMIN-UX-01 | 管理后台：多语言弹窗布局 / Vditor 编辑器 / 站点设置合并 | `admin-content-ux` | `master-relay` | — | done | 已合入 b3d9488 |
 | ADMIN-UX-02 | 管理后台：媒体选择器宽度 / Markdown 编辑器固定高度 | `fix-admin-media-md` | `master-relay` | — | done | 已合入 88732cd |
+| BE-ANALYTICS | 访问统计（PV + 访问来源上报与聚合） | `be-analytics` | `master-relay` | — | todo | worktree 已建，待认领 |
+| FE-ANALYTICS | 官网访问上报埋点 | `fe-analytics` | `master-relay` | BE-ANALYTICS | todo | worktree 已建，待认领 |
+| ADMIN-DASHBOARD | 工作台改造（4 卡片 + 访问来源列表） | `admin-dashboard` | `master-relay` | BE-ANALYTICS | todo | worktree 已建，待认领 |
 
 ## 更新规则
 
