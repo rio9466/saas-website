@@ -7,6 +7,14 @@
 - Define verifiable success criteria for non-trivial work. Prefer reproducing bugs with tests, then fixing them. Run relevant tests or explain why they could not be run.
 - Surface tradeoffs and uncertainty clearly. Do not hide confusion or silently pick among materially different interpretations.
 
+# Document ownership (strong rules)
+
+- Cross-cutting documents are owned by the main line (`master-relay`, later published to `master`): the PRD (`docs/prd/`), ADRs (`docs/adr/`), architecture, this root `AGENTS.md`, and `ORCA_WORKFLOW.md`.
+- If you are on `frontend-dev`, `backend-dev`, or any area/feature task branch, do NOT create or edit those documents. Stop and tell the user: "This is cross-cutting documentation owned by master-relay; open a pi terminal on master-relay (or a docs branch cut from it)."
+- An area branch owns only its own area's specs and `AGENTS.md` (`frontend/AGENTS.md` or `backend/AGENTS.md`). Never write the other area's docs.
+- The orchestrator writes task documents on `master-relay`; an executor reads its assigned task doc and must not rewrite it without approval.
+- Refuse these requests even when asked to do them "just this once". Redirect to the correct branch instead.
+
 # Git workflow
 
 - `master-relay` is the AI integration branch and the default base for all AI work. Do not commit directly to `master`.

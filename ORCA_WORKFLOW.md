@@ -56,7 +56,42 @@ Rules:
 - One agent per worktree; never run two writers on one branch.
 - Prefer a written task doc over a long inline prompt: it is reviewable and reusable.
 
-## 4. Initialization scenarios
+## 4. Documents and ownership
+
+Different documents have different owners. A branch must refuse work that belongs to another
+branch instead of doing it "just this once".
+
+| Document                               | What it is                                          | Owner                      | Location                                   |
+| -------------------------------------- | --------------------------------------------------- | -------------------------- | ------------------------------------------ |
+| PRD                                    | What to build and why; product level, cross-cutting | `master-relay` (main line) | `docs/prd/`                                |
+| ADR                                    | Cross-cutting technical decision and its rationale  | `master-relay` (main line) | `docs/adr/`                                |
+| Architecture                           | Cross-cutting system design                         | `master-relay` (main line) | `docs/`                                    |
+| Area spec                              | How to build one feature inside one area            | that area's branch         | `docs/specs/` or the area's own docs       |
+| Task doc                               | One executable task for one agent                   | the executing branch       | `docs/tasks/`                              |
+| `ORCA_WORKFLOW.md` / root `AGENTS.md`  | Process and rules                                   | `master-relay` (main line) | repo root                                  |
+| Area `AGENTS.md`                       | Coding rules for one area                           | that area's branch         | `frontend/AGENTS.md`, `backend/AGENTS.md`  |
+
+Strong rules:
+
+- Cross-cutting documents (PRD, ADR, architecture, root `AGENTS.md`, `ORCA_WORKFLOW.md`) are
+  owned by the main line: `master-relay`, later published to `master`.
+- If you are on `frontend-dev`, `backend-dev`, or any area/feature task branch, do NOT create
+  or edit those documents. Stop and report: "This is cross-cutting documentation owned by
+  `master-relay`. Open a pi terminal on `master-relay` (or on a docs branch cut from it) to do
+  this."
+- An area branch owns only its own area's specs and `AGENTS.md`. Never write the other area's.
+- The orchestrator writes task documents on `master-relay`. An executor reads its assigned
+  task doc and must not rewrite it without the orchestrator's approval.
+
+Where to do what:
+
+| Work                                                     | Branch to open a pi terminal on                          |
+| -------------------------------------------------------- | -------------------------------------------------------- |
+| PRD, ADRs, architecture, process/rule changes            | `master-relay` (or a `docs/<topic>` branch cut from it)  |
+| Frontend feature work                                    | `frontend-dev` or a frontend task branch                 |
+| Backend feature work                                     | `backend-dev` or a backend task branch                   |
+
+## 5. Initialization scenarios
 
 ### A. No scaffold given (greenfield)
 
@@ -93,7 +128,7 @@ Vendor it as plain source. Never keep its git history, and never touch the sourc
 6. Commit on the owning branch and merge into `master-relay`. Leave the original scaffold
    repo untouched.
 
-## 5. Branch constraints (AGENTS.md)
+## 6. Branch constraints (AGENTS.md)
 
 `AGENTS.md` files are layered; the nearest one wins.
 
@@ -113,7 +148,7 @@ Core cross-branch constraints:
 - Never reintroduce easy-admin's git history, a submodule, or the original repo as a remote.
 - Keep `master` untouched.
 
-## 6. Merge and review
+## 7. Merge and review
 
 1. The executor runs the acceptance checks in the task doc and reports the exact command and
    result.
@@ -121,7 +156,7 @@ Core cross-branch constraints:
 3. After a merge, `master-relay` must still build/validate for the areas it touched.
 4. `master` is updated only with explicit user approval.
 
-## 7. Environment notes
+## 8. Environment notes
 
 - **pnpm 12 on macOS** — the version manager can install pnpm without its native binary,
   leaving a shebang-less `bin/pnpm` that fails with `ENOEXEC`. Fix:
@@ -131,7 +166,7 @@ Core cross-branch constraints:
 - Orca injects pi extensions for status reporting, the terminal-title spinner, and editor
   prefill. They are managed by Orca; do not edit them by hand.
 
-## 8. Task document template
+## 9. Task document template
 
 ```markdown
 # Task: <name>
