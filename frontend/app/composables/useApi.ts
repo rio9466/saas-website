@@ -11,6 +11,8 @@ export interface ApiRequestOptions {
   locale?: string
   /** Internal marker so a 401 is only retried once. */
   retried?: boolean
+  /** Public auth endpoints must not trigger a refresh + replay on 401. */
+  skipAuthRetry?: boolean
 }
 
 interface ApiEnvelope<T> {
@@ -163,6 +165,7 @@ export function useApi() {
         && RETRYABLE_UNAUTHORIZED_CODES.has(error.code)
         && import.meta.client
         && !options.retried
+        && !options.skipAuthRetry
       ) {
         try {
           await refreshAccessToken()
