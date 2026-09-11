@@ -1,3 +1,5 @@
 .agents/
 .cursor/
-docs/
+# Upstream easy-admin ignores `docs/`. We intentionally do not: this repo tracks
+# backend/server/docs (API docs) and backend/server/admin/src/views/content/docs
+# (admin content views). Keep them tracked.
