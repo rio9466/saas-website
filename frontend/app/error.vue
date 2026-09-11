@@ -31,7 +31,7 @@ function goHome() {
         </p>
         <UButton
           color="primary"
-          icon="i-lucide-home"
+          icon="i-lucide-house"
           @click="goHome"
         >
           {{ t('common.backHome') }}

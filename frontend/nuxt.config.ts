@@ -60,6 +60,19 @@ export default defineNuxtConfig({
     }
   },
 
+  // The app uses system fonts; disable the remote providers so the offline
+  // environment never tries to reach Google Fonts (or any other provider).
+  fonts: {
+    providers: {
+      adobe: false,
+      google: false,
+      googleicons: false,
+      bunny: false,
+      fontshare: false,
+      fontsource: false
+    }
+  },
+
   i18n: {
     restructureDir: 'i18n',
     langDir: 'locales',

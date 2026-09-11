@@ -79,7 +79,7 @@ function submitAnother() {
       v-if="submitted"
       color="success"
       variant="soft"
-      icon="i-lucide-check-circle"
+      icon="i-lucide-circle-check"
       :title="t('contact.successTitle')"
       :description="t('contact.successDescription')"
     >

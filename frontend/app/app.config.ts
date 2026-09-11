@@ -9,6 +9,6 @@ export default defineAppConfig({
   // properties (radius, typography). Colors are handled by Nuxt UI colors above.
   design: {
     radius: '0.375rem',
-    fontFamily: '\'Public Sans\', ui-sans-serif, system-ui, sans-serif'
+    fontFamily: 'ui-sans-serif, system-ui, sans-serif'
   }
 })
