@@ -507,6 +507,104 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /**
+         * Update the current user's nickname and/or avatar
+         * @description At least one of nickname or avatar_url is required. username, email,
+         *     points, level, and status are never bound to this request and cannot be
+         *     changed here. avatar_url accepts an absolute http/https URL or a
+         *     root-relative path.
+         */
+        patch: operations["updateMe"];
+        trace?: never;
+    };
+    "/api/v1/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change the current user's password
+         * @description Verifies the current password, stores the new hash (8-72 UTF-8 bytes),
+         *     and revokes every session for the user (auth_epoch bump). The response
+         *     clears the refresh cookie; the client must drop the in-memory access
+         *     token and log in again.
+         */
+        post: operations["changeMyPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/point-transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the current user's point transactions
+         * @description Only the authenticated user's own ledger, newest first.
+         */
+        get: operations["listMyPointTransactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request a password-reset email
+         * @description Always returns 200 for valid input whether or not the address exists,
+         *     so account existence is never revealed. A one-time token is stored as a
+         *     sha256 digest under easy-admin:user-reset:{id} with a 1-hour default
+         *     TTL and emailed when the account exists. SMTP failures are logged and
+         *     never distinguish the address. Rate-limited per IP and per address
+         *     (3/hour each); Redis failures fail closed as 42901.
+         */
+        post: operations["userForgotPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset a password with a one-time token
+         * @description Consumes the single-use token (atomic compare-and-delete), stores the
+         *     new password (8-72 UTF-8 bytes), bumps auth_epoch, and revokes every
+         *     session. A wrong, expired, or replayed token returns 40016. Rate-limited
+         *     per IP (10/hour); Redis failures fail closed as 42901.
+         */
+        post: operations["userResetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -3580,6 +3678,204 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["AccountDisabled"];
+        };
+    };
+    updateMe: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    nickname?: string;
+                    avatar_url?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated profile (same shape as GET /me) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserProfileSuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["AccountDisabled"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    changeMyPassword: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: password */
+                    current_password: string;
+                    /**
+                     * Format: password
+                     * @description UTF-8 encoded byte length between 8 and 72
+                     */
+                    new_password: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Password changed; cookies cleared and sessions revoked */
+            200: {
+                headers: {
+                    "X-Request-ID": components["headers"]["RequestID"];
+                    /** @description Cleared HttpOnly user refresh cookie */
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptySuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["AccountDisabled"];
+            503: components["responses"]["AuditUnavailable"];
+        };
+    };
+    listMyPointTransactions: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated ledger */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PointTransactionPageSuccess"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["AccountDisabled"];
+        };
+    };
+    userForgotPassword: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: email */
+                    email: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Always success for valid input (existence never revealed) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptySuccess"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    userResetPassword: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional inbound request ID. Accepted only when 1-128 characters and
+                 *     every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+                 */
+                "X-Request-ID"?: components["parameters"]["RequestID"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: email */
+                    email: string;
+                    token: string;
+                    /** Format: password */
+                    new_password: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Password reset; sessions revoked */
+            200: {
+                headers: {
+                    "X-Request-ID": components["headers"]["RequestID"];
+                    /** @description Cleared HttpOnly user refresh cookie */
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptySuccess"];
+                };
+            };
+            /** @description Invalid/expired/used token (40016) or validation failed (10001) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerificationInvalidError"] | components["schemas"]["ValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            503: components["responses"]["AuditUnavailable"];
         };
     };
     listBusinessUsers: {
