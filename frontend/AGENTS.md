@@ -1,6 +1,6 @@
 # Frontend (frontend/) Instructions
 
-Owned by the frontend workstream (`frontend-dev` and frontend task branches). The backend
+Owned by the frontend workstream (frontend task branches cut from `master-relay`). The backend
 workstream must not modify this directory.
 
 ## Stack

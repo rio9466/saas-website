@@ -1,6 +1,6 @@
 # Backend (backend/) Instructions
 
-Owned by the backend workstream (`backend-dev` and backend task branches). The frontend
+Owned by the backend workstream (backend task branches cut from `master-relay`). The frontend
 workstream must not modify this directory.
 
 ## Structure
