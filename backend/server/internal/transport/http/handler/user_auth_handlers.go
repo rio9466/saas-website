@@ -37,20 +37,24 @@ func (s UserCookieSettings) normalized() UserCookieSettings {
 // UserAuthHandlers serves public settings and business-user authentication.
 type UserAuthHandlers struct {
 	svc            UserClientService
+	content        ContentService
 	cookie         UserCookieSettings
 	trustedOrigins []string
 }
 
-// NewUserAuthHandlers constructs user auth handlers.
-func NewUserAuthHandlers(svc UserClientService, cookie UserCookieSettings, trustedOrigins []string) *UserAuthHandlers {
+// NewUserAuthHandlers constructs user auth handlers. content may be nil, in
+// which case GET /public/settings returns only the platform fields.
+func NewUserAuthHandlers(svc UserClientService, content ContentService, cookie UserCookieSettings, trustedOrigins []string) *UserAuthHandlers {
 	return &UserAuthHandlers{
 		svc:            svc,
+		content:        content,
 		cookie:         cookie.normalized(),
 		trustedOrigins: append([]string(nil), trustedOrigins...),
 	}
 }
 
-// PublicSettings returns the safe settings whitelist.
+// PublicSettings returns the safe settings whitelist merged with content
+// settings when a content service is wired.
 func (h *UserAuthHandlers) PublicSettings(c *gin.Context) {
 	result, err := h.svc.GetPublicSettings(c.Request.Context())
 	if err != nil {
@@ -58,6 +62,15 @@ func (h *UserAuthHandlers) PublicSettings(c *gin.Context) {
 		return
 	}
 	data := toPublicSettingsData(result)
+	if h.content != nil {
+		contentSettings, cerr := h.content.GetPublicSettings(c.Request.Context(), c.Query("locale"))
+		if cerr != nil {
+			middleware.WriteAppError(c, cerr)
+			return
+		}
+		applyPublicContentSettings(&data, contentSettings)
+	}
+	setPublicCache(c)
 	response.OK(c, data)
 }
 

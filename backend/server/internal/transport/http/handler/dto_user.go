@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/rio9466/easy-admin/server/internal/domain/content"
 	userdomain "github.com/rio9466/easy-admin/server/internal/domain/user"
 )
 
@@ -109,6 +110,24 @@ type publicSettingsData struct {
 	EmailLoginEnabled         bool   `json:"email_login_enabled"`
 	EmailVerificationRequired bool   `json:"email_verification_required"`
 	DefaultAvatarURL          string `json:"default_avatar_url"`
+
+	// Content-foundation fields (contract §4.1).
+	SiteName              string                     `json:"site_name"`
+	LogoURL               string                     `json:"logo_url"`
+	LogoDarkURL           string                     `json:"logo_dark_url"`
+	FaviconURL            string                     `json:"favicon_url"`
+	Tagline               string                     `json:"tagline"`
+	FooterText            string                     `json:"footer_text"`
+	ICPRecord             string                     `json:"icp_record"`
+	ContactEmail          string                     `json:"contact_email"`
+	ContactPhone          string                     `json:"contact_phone"`
+	ContactAddress        string                     `json:"contact_address"`
+	SocialLinks           []content.SocialLink       `json:"social_links"`
+	SEODefaultTitle       string                     `json:"seo_default_title"`
+	SEODefaultDescription string                     `json:"seo_default_description"`
+	SEODefaultOGImageURL  string                     `json:"seo_default_og_image_url"`
+	DefaultLocale         string                     `json:"default_locale"`
+	Locales               []content.LocaleOptionView `json:"locales"`
 }
 
 type userLoginData struct {
@@ -218,7 +237,7 @@ func parseID(raw string) (int64, error) {
 
 func toPublicSettingsData(in *PublicSettingsData) publicSettingsData {
 	if in == nil {
-		return publicSettingsData{}
+		return publicSettingsData{SocialLinks: []content.SocialLink{}, Locales: []content.LocaleOptionView{}}
 	}
 	return publicSettingsData{
 		PlatformName:              in.PlatformName,
@@ -229,6 +248,36 @@ func toPublicSettingsData(in *PublicSettingsData) publicSettingsData {
 		EmailLoginEnabled:         in.EmailLoginEnabled,
 		EmailVerificationRequired: in.EmailVerificationRequired,
 		DefaultAvatarURL:          in.DefaultAvatarURL,
+		SocialLinks:               []content.SocialLink{},
+		Locales:                   []content.LocaleOptionView{},
+	}
+}
+
+// applyPublicContentSettings merges the content-owned settings slice into the
+// platform settings payload returned by GET /api/v1/public/settings.
+func applyPublicContentSettings(data *publicSettingsData, view *content.PublicSettingsView) {
+	if data == nil || view == nil {
+		return
+	}
+	data.SiteName = view.SiteName
+	data.LogoURL = view.LogoURL
+	data.LogoDarkURL = view.LogoDarkURL
+	data.FaviconURL = view.FaviconURL
+	data.Tagline = view.Tagline
+	data.FooterText = view.FooterText
+	data.ICPRecord = view.ICPRecord
+	data.ContactEmail = view.ContactEmail
+	data.ContactPhone = view.ContactPhone
+	data.ContactAddress = view.ContactAddress
+	if view.SocialLinks != nil {
+		data.SocialLinks = view.SocialLinks
+	}
+	data.SEODefaultTitle = view.SEODefaultTitle
+	data.SEODefaultDescription = view.SEODefaultDescription
+	data.SEODefaultOGImageURL = view.SEODefaultOGImageURL
+	data.DefaultLocale = view.DefaultLocale
+	if view.Locales != nil {
+		data.Locales = view.Locales
 	}
 }
 

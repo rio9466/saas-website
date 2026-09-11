@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rio9466/easy-admin/server/internal/domain/adminauth"
+	"github.com/rio9466/easy-admin/server/internal/domain/content"
 	"github.com/rio9466/easy-admin/server/internal/transport/http/handler"
 	"github.com/rio9466/easy-admin/server/internal/transport/http/middleware"
 )
@@ -16,6 +17,7 @@ type Dependencies struct {
 	AdminAuth      handler.AdminAuthService
 	UserClient     handler.UserClientService
 	UserAdmin      handler.UserAdminService
+	Content        handler.ContentService
 	Tokens         middleware.TokenParser
 	Sessions       middleware.SessionGetter
 	UserTokens     middleware.TokenParser
@@ -43,6 +45,19 @@ func NewRouter(deps Dependencies) *gin.Engine {
 	r.GET("/healthz", handler.Healthz)
 	r.GET("/readyz", handler.Readyz(deps.ReadyChecker))
 
+	// --- public content surface (no authentication) ------------------------
+	if deps.Content != nil {
+		contentPublic := handler.NewContentPublicHandlers(deps.Content)
+		r.GET("/api/v1/public/navigation", contentPublic.Navigation)
+		r.GET("/api/v1/public/home", contentPublic.Home)
+		r.GET("/api/v1/public/features", contentPublic.Features)
+		r.GET("/api/v1/public/pricing", contentPublic.Pricing)
+		r.GET("/api/v1/public/pages", contentPublic.Pages)
+		r.GET("/api/v1/public/pages/:slug", contentPublic.Page)
+		r.GET("/api/v1/public/docs", contentPublic.Docs)
+		r.GET("/api/v1/public/docs/:slug", contentPublic.Doc)
+	}
+
 	if deps.AdminAuth == nil && deps.UserClient == nil && deps.UserAdmin == nil {
 		return r
 	}
@@ -51,7 +66,7 @@ func NewRouter(deps Dependencies) *gin.Engine {
 
 	// --- business-user public/auth/me surface ------------------------------
 	if deps.UserClient != nil {
-		userAuthHandlers := handler.NewUserAuthHandlers(deps.UserClient, deps.UserCookie, deps.TrustedOrigins)
+		userAuthHandlers := handler.NewUserAuthHandlers(deps.UserClient, deps.Content, deps.UserCookie, deps.TrustedOrigins)
 		userAuthenticate := middleware.AuthenticateUser(deps.UserTokens, deps.UserSessions, deps.UserClient)
 
 		r.GET("/api/v1/public/settings", userAuthHandlers.PublicSettings)
@@ -168,6 +183,83 @@ func NewRouter(deps Dependencies) *gin.Engine {
 				settings.GET("", middleware.RequirePermission(adminauth.PermSystemSettingsRead), systemSettingsHandlers.Get)
 				settings.PUT("", middleware.RequirePermission(adminauth.PermSystemSettingsManage), systemSettingsHandlers.Update)
 			}
+		}
+	}
+
+	// --- administrator content management ---------------------------------
+	if deps.Content != nil {
+		contentHandlers := handler.NewContentAdminHandlers(deps.Content)
+
+		siteContent := v1.Group("/site-settings")
+		siteContent.Use(authenticate)
+		{
+			siteContent.GET("", middleware.RequirePermission(content.PermissionRead), contentHandlers.GetSiteSettings)
+			siteContent.PUT("", middleware.RequirePermission(content.PermissionManage), contentHandlers.UpdateSiteSettings)
+		}
+
+		navigation := v1.Group("/navigation-items")
+		navigation.Use(authenticate)
+		{
+			navigation.GET("", middleware.RequirePermission(content.PermissionRead), contentHandlers.ListNavigationItems)
+			navigation.POST("", middleware.RequirePermission(content.PermissionManage), contentHandlers.CreateNavigationItem)
+			navigation.PATCH("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.UpdateNavigationItem)
+			navigation.DELETE("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.DeleteNavigationItem)
+		}
+
+		homeSections := v1.Group("/home-sections")
+		homeSections.Use(authenticate)
+		{
+			homeSections.GET("", middleware.RequirePermission(content.PermissionRead), contentHandlers.ListHomeSections)
+			homeSections.POST("", middleware.RequirePermission(content.PermissionManage), contentHandlers.CreateHomeSection)
+			homeSections.PATCH("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.UpdateHomeSection)
+			homeSections.DELETE("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.DeleteHomeSection)
+		}
+
+		features := v1.Group("/features")
+		features.Use(authenticate)
+		{
+			features.GET("", middleware.RequirePermission(content.PermissionRead), contentHandlers.ListFeatures)
+			features.POST("", middleware.RequirePermission(content.PermissionManage), contentHandlers.CreateFeature)
+			features.PATCH("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.UpdateFeature)
+			features.DELETE("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.DeleteFeature)
+		}
+
+		pricingPlans := v1.Group("/pricing-plans")
+		pricingPlans.Use(authenticate)
+		{
+			pricingPlans.GET("", middleware.RequirePermission(content.PermissionRead), contentHandlers.ListPricingPlans)
+			pricingPlans.POST("", middleware.RequirePermission(content.PermissionManage), contentHandlers.CreatePricingPlan)
+			pricingPlans.PATCH("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.UpdatePricingPlan)
+			pricingPlans.DELETE("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.DeletePricingPlan)
+		}
+
+		pages := v1.Group("/pages")
+		pages.Use(authenticate)
+		{
+			pages.GET("", middleware.RequirePermission(content.PermissionRead), contentHandlers.ListPages)
+			pages.POST("", middleware.RequirePermission(content.PermissionManage), contentHandlers.CreatePage)
+			pages.GET("/:id", middleware.RequirePermission(content.PermissionRead), contentHandlers.GetPage)
+			pages.PATCH("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.UpdatePage)
+			pages.DELETE("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.DeletePage)
+		}
+
+		docCategories := v1.Group("/doc-categories")
+		docCategories.Use(authenticate)
+		{
+			docCategories.GET("", middleware.RequirePermission(content.PermissionRead), contentHandlers.ListDocCategories)
+			docCategories.POST("", middleware.RequirePermission(content.PermissionManage), contentHandlers.CreateDocCategory)
+			docCategories.PATCH("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.UpdateDocCategory)
+			docCategories.DELETE("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.DeleteDocCategory)
+		}
+
+		docArticles := v1.Group("/doc-articles")
+		docArticles.Use(authenticate)
+		{
+			docArticles.GET("", middleware.RequirePermission(content.PermissionRead), contentHandlers.ListDocArticles)
+			docArticles.POST("", middleware.RequirePermission(content.PermissionManage), contentHandlers.CreateDocArticle)
+			docArticles.GET("/:id", middleware.RequirePermission(content.PermissionRead), contentHandlers.GetDocArticle)
+			docArticles.PATCH("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.UpdateDocArticle)
+			docArticles.DELETE("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.DeleteDocArticle)
 		}
 	}
 

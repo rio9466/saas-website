@@ -62,8 +62,8 @@ func TestRunRealMigrationsAreIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("first run: %v", err)
 	}
-	if len(first.Applied) != 7 {
-		t.Fatalf("first run applied %d migrations, want 7: %+v", len(first.Applied), first)
+	if len(first.Applied) != 9 {
+		t.Fatalf("first run applied %d migrations, want 9: %+v", len(first.Applied), first)
 	}
 
 	second, err := migrate.Run(ctx, disposableDSN, root, "primary")
