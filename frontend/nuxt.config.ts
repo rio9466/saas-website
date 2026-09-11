@@ -37,8 +37,12 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
-    // Browser traffic always stays same-origin; Nitro proxies /api/** to the Go service.
-    '/api/**': { proxy: `${apiProxyTarget}/api/**` },
+    // Browser traffic always stays same-origin. `/api/**` is proxied to the Go
+    // service by `server/middleware/api-proxy.ts`, which reads runtimeConfig
+    // per request. A `routeRules` proxy target is frozen into `.output` at build
+    // time, so `NUXT_API_PROXY_TARGET` could not take effect at runtime without
+    // a rebuild; the middleware keeps dev and production behaviour identical.
+
     // Public content pages are cached (ISR-style) for the same window as the
     // backend `Cache-Control: max-age=60` (contract §7.4).
     '/': { swr: 60 },
