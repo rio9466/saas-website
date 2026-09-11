@@ -71,5 +71,62 @@
     "50001": "The service is temporarily unavailable. Please try again later.",
     "50002": "The service is temporarily unavailable. Please try again later.",
     "50003": "We could not send the email. Please try again later."
+  },
+  "home": {
+    "fallbackTitle": "Build and ship with confidence",
+    "fallbackDescription": "A multilingual platform website powered by Nuxt and easy-admin.",
+    "fallbackPrimary": "Get started",
+    "fallbackSecondary": "Contact us"
+  },
+  "features": {
+    "title": "Features",
+    "subtitle": "Everything you need to run your product.",
+    "empty": "No features published yet."
+  },
+  "pricing": {
+    "title": "Pricing",
+    "subtitle": "Simple plans that scale with your team.",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "perMonth": "/ month",
+    "perYear": "/ year",
+    "recommended": "Recommended",
+    "contactUs": "Contact us",
+    "empty": "No pricing plans published yet."
+  },
+  "docs": {
+    "title": "Documentation",
+    "subtitle": "Guides and references to get you up and running.",
+    "empty": "No documentation published yet.",
+    "navigation": "Documentation",
+    "breadcrumb": "Breadcrumb",
+    "surround": "Article navigation",
+    "previous": "Previous",
+    "next": "Next",
+    "tableOfContents": "On this page"
+  },
+  "contact": {
+    "title": "Contact us",
+    "subtitle": "Tell us what you need and we will get back to you.",
+    "infoTitle": "Contact information",
+    "submit": "Send message",
+    "sendAnother": "Send another message",
+    "successTitle": "Message sent",
+    "successDescription": "Thanks for reaching out. We will get back to you soon.",
+    "fields": {
+      "name": "Name",
+      "email": "Email",
+      "company": "Company (optional)",
+      "message": "Message",
+      "consent": "I agree to the processing of my personal data."
+    },
+    "errors": {
+      "nameRequired": "Please enter your name.",
+      "emailRequired": "Please enter your email address.",
+      "emailInvalid": "Please enter a valid email address.",
+      "messageRequired": "Please enter a message.",
+      "consentRequired": "Please accept before submitting.",
+      "validation": "Please check the information you entered."
+    }
   }
 }

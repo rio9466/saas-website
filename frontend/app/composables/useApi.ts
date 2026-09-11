@@ -106,11 +106,16 @@ export function useApi() {
   const token = useAccessToken()
   const config = useRuntimeConfig()
   const apiBase = config.public.apiBase
-  const internalBase = config.apiInternalBase.replace(/\/$/, '')
 
   function resolveUrl(path: string): string {
     const relative = path.startsWith('/') ? path : `/${path}`
-    return import.meta.server ? `${internalBase}${apiBase}${relative}` : `${apiBase}${relative}`
+    if (import.meta.server) {
+      // `apiInternalBase` is a server-only runtime key; the browser always uses
+      // the same-origin `/api/**` proxy below.
+      const internalBase = String(config.apiInternalBase || '').replace(/\/$/, '')
+      return `${internalBase}${apiBase}${relative}`
+    }
+    return `${apiBase}${relative}`
   }
 
   async function execute<T>(path: string, options: ApiRequestOptions): Promise<T> {
