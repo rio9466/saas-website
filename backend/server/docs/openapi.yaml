@@ -1,0 +1,2099 @@
+openapi: 3.0.3
+info:
+  title: easy-admin Server API
+  version: 0.4.0
+  description: |
+    easy-admin Go service API. Health probes plus administrator authentication,
+    RBAC management, read-only audit APIs, and the business-user platform
+    (public settings, registration, verification, authentication, and
+    administrator-managed users/levels/points/system settings). All responses
+    use the shared JSON envelope with a request ID. Persistent IDs are decimal
+    strings; timestamps are UTC RFC 3339; point values are fixed four-decimal
+    strings (for example "123.4567") to avoid JavaScript precision loss.
+servers:
+  - url: http://127.0.0.1:8080
+    description: Local development
+tags:
+  - name: health
+    description: Process liveness and dependency readiness
+  - name: admin-auth
+    description: Administrator authentication and current profile
+  - name: admin-users
+    description: Administrator account management
+  - name: admin-roles
+    description: Roles and permissions
+  - name: admin-audit
+    description: Immutable audit/security event reads
+  - name: public-settings
+    description: Public platform settings whitelist
+  - name: user-auth
+    description: Business-user registration, verification, and authentication
+  - name: user-profile
+    description: Authenticated business-user profile (/me)
+  - name: admin-business-users
+    description: Administrator management of business users
+  - name: admin-user-levels
+    description: Business-user level management
+  - name: admin-system-settings
+    description: Typed platform system settings
+paths:
+  /healthz:
+    get:
+      tags: [health]
+      summary: Liveness probe
+      description: Reports process liveness without querying PostgreSQL, Redis, or other dependencies.
+      operationId: getHealthz
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Process is alive
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthzSuccess'
+  /readyz:
+    get:
+      tags: [health]
+      summary: Readiness probe
+      description: |
+        Checks primary PostgreSQL, log PostgreSQL, and Redis connectivity with
+        bounded timeouts. Returns HTTP 503 and application code 50001 when any
+        required dependency is unavailable.
+      operationId: getReadyz
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: All required dependencies are reachable
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyzSuccess'
+        '503':
+          description: One or more required dependencies are unavailable
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyzError'
+  /api/v1/admin/auth/login:
+    post:
+      tags: [admin-auth]
+      summary: Administrator login
+      operationId: adminLogin
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+      responses:
+        '200':
+          description: Login succeeded; refresh token is set only as HttpOnly cookie
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+            Set-Cookie:
+              description: HttpOnly refresh cookie scoped to /api/v1/admin/auth
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountDisabled'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/auth/refresh:
+    post:
+      tags: [admin-auth]
+      summary: Rotate refresh cookie and issue access token
+      operationId: adminRefresh
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Refresh succeeded
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+            Set-Cookie:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginSuccess'
+        '401':
+          description: Invalid, missing, or replayed refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+        '403':
+          $ref: '#/components/responses/AccountDisabled'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/auth/logout:
+    post:
+      tags: [admin-auth]
+      summary: Revoke current session
+      operationId: adminLogout
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/me:
+    get:
+      tags: [admin-auth]
+      summary: Current administrator profile
+      operationId: adminMe
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Profile with role and effective permission codes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [admin-auth]
+      summary: Update current administrator display name
+      description: |
+        Updates only the display_name of the currently authenticated administrator.
+        Any authenticated and enabled administrator may change their own display
+        name; admin.user.update is not required. The DTO never accepts administrator
+        ID, username, roles, permissions, or enabled state. The write is audited as
+        administrator.profile_update with the pending-first protocol and fails
+        closed when the log store is unavailable.
+      operationId: adminUpdateMe
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [display_name]
+              properties:
+                display_name: { type: string, minLength: 1 }
+      responses:
+        '200':
+          description: Updated profile (same shape as /me)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/me/password:
+    post:
+      tags: [admin-auth]
+      summary: Change current password and revoke session
+      operationId: adminChangePassword
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: { type: string, format: password }
+                new_password: { type: string, format: password, minLength: 8, maxLength: 72, description: "UTF-8 encoded byte length between 8 and 72" }
+      responses:
+        '200':
+          description: Password changed; session revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/administrators:
+    get:
+      tags: [admin-users]
+      summary: List administrators
+      operationId: listAdministrators
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: q, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: Paginated administrators
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdministratorPageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [admin-users]
+      summary: Create administrator
+      operationId: createAdministrator
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password, role_codes]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password, minLength: 8, maxLength: 72, description: "UTF-8 encoded byte length between 8 and 72" }
+                display_name: { type: string }
+                role_codes:
+                  type: array
+                  items: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdministratorSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/administrators/{id}:
+    get:
+      tags: [admin-users]
+      summary: Get administrator by id
+      operationId: getAdministrator
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Administrator detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdministratorSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [admin-users]
+      summary: Update administrator profile
+      operationId: updateAdministrator
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name: { type: string }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdministratorSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/administrators/{id}/enable:
+    post:
+      tags: [admin-users]
+      summary: Enable administrator
+      operationId: enableAdministrator
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Enabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdministratorSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/administrators/{id}/disable:
+    post:
+      tags: [admin-users]
+      summary: Disable administrator
+      operationId: disableAdministrator
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdministratorSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/administrators/{id}/reset-password:
+    post:
+      tags: [admin-users]
+      summary: Reset administrator password
+      operationId: resetAdministratorPassword
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_password]
+              properties:
+                new_password: { type: string, format: password, minLength: 8, maxLength: 72, description: "UTF-8 encoded byte length between 8 and 72" }
+      responses:
+        '200':
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/administrators/{id}/roles:
+    put:
+      tags: [admin-users]
+      summary: Replace administrator roles
+      operationId: assignAdministratorRoles
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role_codes]
+              properties:
+                role_codes:
+                  type: array
+                  items: { type: string }
+      responses:
+        '200':
+          description: Roles replaced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdministratorSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/roles:
+    get:
+      tags: [admin-roles]
+      summary: List roles
+      operationId: listRoles
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Role list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleListSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [admin-roles]
+      summary: Create custom role
+      operationId: createRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name]
+              properties:
+                code: { type: string }
+                name: { type: string }
+                description: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/roles/{id}:
+    get:
+      tags: [admin-roles]
+      summary: Get role
+      operationId: getRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Role detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [admin-roles]
+      summary: Update role
+      operationId: updateRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/roles/{id}/permissions:
+    put:
+      tags: [admin-roles]
+      summary: Replace role permissions
+      operationId: replaceRolePermissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [permission_codes]
+              properties:
+                permission_codes:
+                  type: array
+                  items: { type: string }
+      responses:
+        '200':
+          description: Permissions replaced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/permissions:
+    get:
+      tags: [admin-roles]
+      summary: Permission catalog
+      operationId: listPermissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Permission list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionListSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/admin/audit-events:
+    get:
+      tags: [admin-audit]
+      summary: List audit events
+      operationId: listAuditEvents
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: actor_id, in: query, schema: { type: string } }
+        - { name: action, in: query, schema: { type: string } }
+        - { name: resource_type, in: query, schema: { type: string } }
+        - { name: outcome, in: query, schema: { type: string, enum: [pending, succeeded, failed] } }
+        - { name: request_id, in: query, schema: { type: string } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+      responses:
+        '200':
+          description: Paginated audit events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditPageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/admin/audit-events/{id}:
+    get:
+      tags: [admin-audit]
+      summary: Get audit event
+      operationId: getAuditEvent
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Audit event detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/public/settings:
+    get:
+      tags: [public-settings]
+      summary: Public platform settings whitelist
+      operationId: getPublicSettings
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Safe public settings (no SMTP secrets, no keys)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSettingsSuccess'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+  /api/v1/auth/register:
+    post:
+      tags: [user-auth]
+      summary: Self-register a business user
+      description: |
+        Requires username, email, and password only. Other values are generated
+        from validated system defaults. When verification is disabled the
+        account is active immediately; otherwise it is pending until a one-time
+        verification link succeeds. Registration is rate-limited.
+      operationId: userRegister
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username: { type: string, minLength: 3, maxLength: 64, description: "No '@'; letters, digits, '.', '_', '-' only" }
+                email: { type: string, format: email }
+                password: { type: string, format: password, minLength: 8, maxLength: 72, description: "UTF-8 encoded byte length between 8 and 72" }
+      responses:
+        '201':
+          description: Registered; profile reflects pending or active status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/RegistrationDisabled'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/auth/verify-email:
+    post:
+      tags: [user-auth]
+      summary: Redeem a one-time email verification token
+      description: |
+        The token is single-use (atomic GETDEL) and expiring; replay or wrong
+        recipient is rejected generically. On success the pending account is
+        activated and registration starting points are granted once.
+      operationId: userVerifyEmail
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, token]
+              properties:
+                email: { type: string, format: email }
+                token: { type: string, minLength: 1 }
+      responses:
+        '200':
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '400':
+          $ref: '#/components/responses/VerificationInvalid'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/auth/resend-verification:
+    post:
+      tags: [user-auth]
+      summary: Resend verification email
+      description: |
+        Invalidates the previous token and stores a fresh one. Rate-limited and
+        never reveals whether an email exists (generic response). SMTP failures
+        abort without changing the stored token.
+      operationId: userResendVerification
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Verification email resent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '400':
+          $ref: '#/components/responses/VerificationInvalid'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/auth/login:
+    post:
+      tags: [user-auth]
+      summary: Business-user login
+      description: |
+        One identifier field: an '@'-containing identifier is treated as email
+        when email login is enabled, otherwise as username. Disabled methods are
+        rejected with a safe generic response. Refresh token is only set as an
+        HttpOnly cookie scoped to /api/v1/auth; last_login_at updates only here.
+      operationId: userLogin
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, password]
+              properties:
+                identifier: { type: string }
+                password: { type: string, format: password }
+      responses:
+        '200':
+          description: Login succeeded
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+            Set-Cookie:
+              description: HttpOnly user refresh cookie scoped to /api/v1/auth
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLoginSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountDisabled'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/auth/refresh:
+    post:
+      tags: [user-auth]
+      summary: Rotate user refresh cookie and issue access token
+      operationId: userRefresh
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Refresh succeeded
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+            Set-Cookie:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLoginSuccess'
+        '401':
+          description: Invalid, missing, or replayed refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+        '403':
+          $ref: '#/components/responses/AccountDisabled'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/auth/logout:
+    post:
+      tags: [user-auth]
+      summary: Revoke current user session
+      operationId: userLogout
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/me:
+    get:
+      tags: [user-profile]
+      summary: Current business-user profile
+      description: |
+        Returns points_balance and consumption_points as fixed four-decimal
+        strings; level is resolved live from the users table.
+      operationId: getMe
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Business-user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountDisabled'
+  /api/v1/admin/users:
+    get:
+      tags: [admin-business-users]
+      summary: List business users
+      operationId: listBusinessUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: q, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string, enum: [pending_verification, active, disabled] } }
+        - { name: level_id, in: query, schema: { type: string, pattern: '^[0-9]+$' } }
+      responses:
+        '200':
+          description: Paginated business users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessUserPageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [admin-business-users]
+      summary: Create business user (email verified by default)
+      operationId: createBusinessUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username: { type: string, minLength: 3, maxLength: 64 }
+                email: { type: string, format: email }
+                password: { type: string, format: password, minLength: 8, maxLength: 72 }
+                nickname: { type: string }
+      responses:
+        '201':
+          description: Created (active, email verified)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessUserSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/users/{id}:
+    get:
+      tags: [admin-business-users]
+      summary: Get business user by id
+      operationId: getBusinessUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Business user detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessUserSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [admin-business-users]
+      summary: Update email, nickname, avatar, remark
+      description: |
+        Only profile fields may change here. Username, registration IP/time,
+        points, level mode, status, and password have dedicated operations.
+      operationId: updateBusinessUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                nickname: { type: string }
+                avatar_url: { type: string }
+                remark: { type: string }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessUserSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/users/{id}/enable:
+    post:
+      tags: [admin-business-users]
+      summary: Re-enable a business user
+      operationId: enableBusinessUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Re-enabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessUserSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/users/{id}/disable:
+    post:
+      tags: [admin-business-users]
+      summary: Disable a business user
+      description: Bumps auth_epoch so every issued session is invalidated.
+      operationId: disableBusinessUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessUserSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/users/{id}/reset-password:
+    post:
+      tags: [admin-business-users]
+      summary: Reset business-user password
+      description: Invalidates every issued session via the auth epoch bump.
+      operationId: resetBusinessUserPassword
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_password]
+              properties:
+                new_password: { type: string, format: password, minLength: 8, maxLength: 72 }
+      responses:
+        '200':
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/users/{id}/points-adjust:
+    post:
+      tags: [admin-business-users]
+      summary: Adjust available and consumption points atomically
+      description: |
+        One primary-database transaction with row locking writes an immutable
+        ledger row and updates balances. Retrying the same idempotency_key is a
+        conflict and never applies twice. Available balance cannot become
+        negative; consumption points cannot be reduced. Auto-mode levels
+        recalculate when consumption grows.
+      operationId: adjustBusinessUserPoints
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [points_delta, consumption_delta, reason, idempotency_key]
+              properties:
+                points_delta: { type: string, pattern: '^[0-9]+\.[0-9]{4}$', description: "Fixed four-decimal string; negative like -5.0000 allowed" }
+                consumption_delta: { type: string, pattern: '^[0-9]+\.[0-9]{4}$', description: "Fixed four-decimal string; must be zero or greater" }
+                reason: { type: string, minLength: 1, maxLength: 200 }
+                idempotency_key: { type: string, minLength: 1, maxLength: 128 }
+      responses:
+        '200':
+          description: Ledger row written
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointTransactionSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/PointsConflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/users/{id}/point-transactions:
+    get:
+      tags: [admin-business-users]
+      summary: Immutable points ledger for a user
+      operationId: listBusinessUserPointTransactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Paginated ledger
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointTransactionPageSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/admin/users/{id}/level:
+    post:
+      tags: [admin-business-users]
+      summary: Assign manual level or switch back to automatic
+      description: |
+        level_mode auto recalculates from cumulative consumption in the same
+        transaction; manual requires an enabled level_id. A disabled level is
+        never assignable.
+      operationId: assignBusinessUserLevel
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [level_mode]
+              properties:
+                level_mode: { type: string, enum: [auto, manual] }
+                level_id: { type: string, pattern: '^[0-9]+$' }
+      responses:
+        '200':
+          description: Level assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessUserSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/user-levels:
+    get:
+      tags: [admin-user-levels]
+      summary: List user levels
+      operationId: listUserLevels
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Level list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLevelListSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [admin-user-levels]
+      summary: Create user level
+      description: Enabled thresholds must be unique (partial unique index).
+      operationId: createUserLevel
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name, threshold_points]
+              properties:
+                code: { type: string, minLength: 1, maxLength: 64 }
+                name: { type: string, minLength: 1 }
+                icon_url: { type: string }
+                threshold_points: { type: string, pattern: '^[0-9]+\.[0-9]{4}$' }
+                sort_order: { type: integer, default: 0 }
+                enabled: { type: boolean, default: true }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLevelSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/user-levels/{id}:
+    get:
+      tags: [admin-user-levels]
+      summary: Get user level
+      operationId: getUserLevel
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Level detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLevelSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [admin-user-levels]
+      summary: Update user level
+      operationId: updateUserLevel
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                icon_url: { type: string }
+                threshold_points: { type: string, pattern: '^[0-9]+\.[0-9]{4}$' }
+                sort_order: { type: integer }
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLevelSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+  /api/v1/admin/system-settings:
+    get:
+      tags: [admin-system-settings]
+      summary: Read typed system settings
+      description: SMTP password is exposed only as password_configured.
+      operationId: getSystemSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Typed settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettingsSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags: [admin-system-settings]
+      summary: Update system settings with optimistic locking
+      description: |
+        version must match the current row or the write is rejected (no silent
+        last-write-wins). smtp_password is write-only: blank retains the stored
+        secret; the response only reports password_configured. Enabling email
+        verification requires a complete, decryptable, enabled SMTP setup and
+        rejects both-login-modes-disabled states.
+      operationId: updateSystemSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform_name, public_frontend_url, public_api_url, registration_enabled, username_login_enabled, email_login_enabled, email_verification_required, default_level_id, registration_points, smtp_enabled, smtp_host, smtp_port, smtp_username, smtp_from_email, smtp_from_name, smtp_tls_mode, version]
+              properties:
+                platform_name: { type: string, minLength: 1 }
+                public_frontend_url: { type: string, format: uri }
+                public_api_url: { type: string, format: uri }
+                registration_enabled: { type: boolean }
+                username_login_enabled: { type: boolean }
+                email_login_enabled: { type: boolean }
+                email_verification_required: { type: boolean }
+                default_level_id: { type: string, pattern: '^[0-9]+$' }
+                default_avatar_url: { type: string }
+                registration_points: { type: string, pattern: '^[0-9]+\.[0-9]{4}$' }
+                smtp_enabled: { type: boolean }
+                smtp_host: { type: string }
+                smtp_port: { type: integer, minimum: 0, maximum: 65535 }
+                smtp_username: { type: string }
+                smtp_password: { type: string, description: "Write-only; blank retains the stored secret" }
+                smtp_from_email: { type: string }
+                smtp_from_name: { type: string }
+                smtp_tls_mode: { type: string, enum: [none, starttls, ssl] }
+                version: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettingsSuccess'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/SettingsConflict'
+        '503':
+          $ref: '#/components/responses/AuditUnavailable'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    RequestID:
+      name: X-Request-ID
+      in: header
+      required: false
+      description: |
+        Optional inbound request ID. Accepted only when 1-128 characters and
+        every character is ASCII alphanumeric or one of `.`, `_`, `:`, `-`.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._:-]{1,128}$'
+    ResourceID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[0-9]+$'
+  headers:
+    RequestID:
+      description: Echoed or generated request ID
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._:-]{1,128}$'
+  responses:
+    Unauthorized:
+      description: Authentication required, session invalid, replayed token, or account disabled
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthError'
+    AccountDisabled:
+      description: Account is disabled
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AccountDisabledError'
+    AuditUnavailable:
+      description: A mandatory audit write could not be persisted; the operation was not completed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuditUnavailableError'
+    Forbidden:
+      description: Authenticated but missing permission
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ForbiddenError'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NotFoundError'
+    Conflict:
+      description: Conflict / invariant violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ConflictError'
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+    RegistrationDisabled:
+      description: Registration is disabled by system settings
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RegistrationDisabledError'
+    VerificationInvalid:
+      description: Verification token is invalid, expired, replayed, or unused
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/VerificationInvalidError'
+    RateLimited:
+      description: Too many attempts; try again later
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RateLimitedError'
+    DependencyUnavailable:
+      description: A required dependency is unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DependencyUnavailableError'
+    PointsConflict:
+      description: Points invariant violation (insufficient balance or idempotency replay)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PointsConflictError'
+    SettingsConflict:
+      description: Optimistic-lock version mismatch; settings did not change
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SettingsConflictError'
+  schemas:
+    Envelope:
+      type: object
+      required: [code, message, data, request_id]
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        data: { type: object, additionalProperties: true }
+        request_id: { type: string, minLength: 1 }
+    HealthzSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            message: { enum: [success] }
+            data:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [ok] }
+    ReadyzSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            message: { enum: [success] }
+            data:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [ready] }
+    ReadyzError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [50001] }
+            message: { enum: [dependency unavailable] }
+            data: { type: object, additionalProperties: false }
+    LoginSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [access_token, token_type, expires_in]
+              properties:
+                access_token: { type: string }
+                token_type: { type: string, enum: [Bearer] }
+                expires_in: { type: integer, enum: [900] }
+              additionalProperties: false
+    MeSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/AdministratorProfile'
+    EmptySuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data: { type: object, additionalProperties: false }
+    AdministratorProfile:
+      type: object
+      required: [id, username, display_name, enabled, role_codes, permission_codes, created_at, updated_at]
+      properties:
+        id: { type: string }
+        username: { type: string }
+        display_name: { type: string }
+        enabled: { type: boolean }
+        role_codes: { type: array, items: { type: string } }
+        permission_codes: { type: array, items: { type: string } }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Administrator:
+      type: object
+      required: [id, username, display_name, enabled, role_codes, created_at, updated_at]
+      properties:
+        id: { type: string }
+        username: { type: string }
+        display_name: { type: string }
+        enabled: { type: boolean }
+        role_codes: { type: array, items: { type: string } }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    AdministratorSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/Administrator'
+    AdministratorPageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Administrator'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+    Role:
+      type: object
+      required: [id, code, name, description, built_in, enabled, permission_codes, created_at, updated_at]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        name: { type: string }
+        description: { type: string }
+        built_in: { type: boolean }
+        enabled: { type: boolean }
+        permission_codes: { type: array, items: { type: string } }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    RoleSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/Role'
+    RoleListSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Role'
+    Permission:
+      type: object
+      required: [id, code, name, description]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        name: { type: string }
+        description: { type: string }
+    PermissionListSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Permission'
+    AuditEvent:
+      type: object
+      required: [id, action, resource_type, outcome, details, request_id, event_at, created_at]
+      properties:
+        id: { type: string }
+        actor_id: { type: string, nullable: true }
+        actor_username: { type: string }
+        actor_display_name: { type: string }
+        actor_role_codes: { type: array, items: { type: string } }
+        action: { type: string }
+        resource_type: { type: string }
+        resource_id: { type: string }
+        outcome: { type: string, enum: [pending, succeeded, failed] }
+        details: { type: object, additionalProperties: true }
+        request_id: { type: string }
+        source_ip: { type: string }
+        user_agent: { type: string }
+        event_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+    AuditSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/AuditEvent'
+    AuditPageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AuditEvent'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+    AuthError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { type: integer, enum: [20001, 20002, 20003, 40006] }
+            message: { type: string }
+            data: { type: object, additionalProperties: false }
+    AccountDisabledError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { type: integer, enum: [40006, 40011] }
+            message: { type: string, enum: [account disabled, email not verified] }
+            data: { type: object, additionalProperties: false }
+    AuditUnavailableError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [50002] }
+            message: { enum: [audit unavailable] }
+            data: { type: object, additionalProperties: false }
+    ForbiddenError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [30001] }
+            message: { enum: [forbidden] }
+            data: { type: object, additionalProperties: false }
+    NotFoundError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [40002] }
+            message: { enum: [not found] }
+            data: { type: object, additionalProperties: false }
+    ConflictError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { type: integer, enum: [40001, 40003, 40004, 40007] }
+            data: { type: object, additionalProperties: false }
+    ValidationError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { type: integer, enum: [10001, 40005, 40012] }
+            message: { type: string }
+            data: { type: object, additionalProperties: false }
+    # ---- business-user platform schemas ----
+    PublicSettings:
+      type: object
+      required: [platform_name, public_frontend_url, public_api_url, registration_enabled, username_login_enabled, email_login_enabled, email_verification_required, default_avatar_url]
+      properties:
+        platform_name: { type: string }
+        public_frontend_url: { type: string, format: uri }
+        public_api_url: { type: string, format: uri }
+        registration_enabled: { type: boolean }
+        username_login_enabled: { type: boolean }
+        email_login_enabled: { type: boolean }
+        email_verification_required: { type: boolean }
+        default_avatar_url: { type: string }
+      additionalProperties: false
+    PublicSettingsSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/PublicSettings'
+    UserLoginSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [access_token, token_type, expires_in]
+              properties:
+                access_token: { type: string }
+                token_type: { type: string, enum: [Bearer] }
+                expires_in: { type: integer, enum: [900] }
+              additionalProperties: false
+    UserLevelBrief:
+      type: object
+      required: [id, code, name, mode]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        name: { type: string }
+        mode: { type: string, enum: [auto, manual] }
+      additionalProperties: false
+    UserProfile:
+      type: object
+      required: [id, username, email, nickname, avatar_url, status, email_verified_at, last_login_at, points_balance, consumption_points, level, created_at, updated_at]
+      properties:
+        id: { type: string }
+        username: { type: string }
+        email: { type: string }
+        nickname: { type: string }
+        avatar_url: { type: string }
+        status: { type: string, enum: [pending_verification, active, disabled] }
+        email_verified_at: { type: string, format: date-time, nullable: true }
+        last_login_at: { type: string, format: date-time, nullable: true }
+        points_balance: { type: string, description: "Fixed four-decimal string" }
+        consumption_points: { type: string, description: "Fixed four-decimal string" }
+        level:
+          $ref: '#/components/schemas/UserLevelBrief'
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    UserProfileSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/UserProfile'
+    BusinessUser:
+      type: object
+      required: [id, username, email, nickname, avatar_url, status, registration_ip, email_verified_at, last_login_at, points_balance, consumption_points, level, remark, created_at, updated_at]
+      properties:
+        id: { type: string }
+        username: { type: string }
+        email: { type: string }
+        nickname: { type: string }
+        avatar_url: { type: string }
+        status: { type: string, enum: [pending_verification, active, disabled] }
+        registration_ip: { type: string }
+        email_verified_at: { type: string, format: date-time, nullable: true }
+        last_login_at: { type: string, format: date-time, nullable: true }
+        points_balance: { type: string }
+        consumption_points: { type: string }
+        level:
+          $ref: '#/components/schemas/UserLevelBrief'
+        remark: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    BusinessUserSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/BusinessUser'
+    BusinessUserPageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/BusinessUser'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+    PointTransaction:
+      type: object
+      required: [id, points_delta, consumption_delta, balance_after, consumption_after, reason, actor_id, idempotency_key, created_at]
+      properties:
+        id: { type: string }
+        points_delta: { type: string }
+        consumption_delta: { type: string }
+        balance_after: { type: string }
+        consumption_after: { type: string }
+        reason: { type: string }
+        actor_id: { type: string, nullable: true }
+        idempotency_key: { type: string }
+        created_at: { type: string, format: date-time }
+    PointTransactionSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/PointTransaction'
+    PointTransactionPageSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items, total, page, page_size]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/PointTransaction'
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+    UserLevel:
+      type: object
+      required: [id, code, name, icon_url, threshold_points, sort_order, enabled, created_at, updated_at]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        name: { type: string }
+        icon_url: { type: string }
+        threshold_points: { type: string }
+        sort_order: { type: integer }
+        enabled: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    UserLevelSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/UserLevel'
+    UserLevelListSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/UserLevel'
+    SystemSettings:
+      type: object
+      required: [platform_name, public_frontend_url, public_api_url, registration_enabled, username_login_enabled, email_login_enabled, email_verification_required, default_level_id, default_avatar_url, registration_points, smtp_enabled, smtp_host, smtp_port, smtp_username, password_configured, smtp_from_email, smtp_from_name, smtp_tls_mode, version, updated_by, updated_at]
+      properties:
+        platform_name: { type: string }
+        public_frontend_url: { type: string, format: uri }
+        public_api_url: { type: string, format: uri }
+        registration_enabled: { type: boolean }
+        username_login_enabled: { type: boolean }
+        email_login_enabled: { type: boolean }
+        email_verification_required: { type: boolean }
+        default_level_id: { type: string }
+        default_avatar_url: { type: string }
+        registration_points: { type: string }
+        smtp_enabled: { type: boolean }
+        smtp_host: { type: string }
+        smtp_port: { type: integer }
+        smtp_username: { type: string }
+        password_configured: { type: boolean, description: "True when an encrypted SMTP password is stored; plaintext/ciphertext never returned" }
+        smtp_from_email: { type: string }
+        smtp_from_name: { type: string }
+        smtp_tls_mode: { type: string, enum: [none, starttls, ssl] }
+        version: { type: integer, description: "Optimistic lock version" }
+        updated_by: { type: string }
+        updated_at: { type: string, format: date-time }
+    SystemSettingsSuccess:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [0] }
+            data:
+              $ref: '#/components/schemas/SystemSettings'
+    RegistrationDisabledError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [40010] }
+            message: { enum: [registration disabled] }
+            data: { type: object, additionalProperties: false }
+    VerificationInvalidError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [40016] }
+            message: { enum: [verification token invalid] }
+            data: { type: object, additionalProperties: false }
+    RateLimitedError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [42901] }
+            message: { enum: [rate limited] }
+            data: { type: object, additionalProperties: false }
+    DependencyUnavailableError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { type: integer, enum: [50001, 50003] }
+            message: { type: string, enum: [dependency unavailable, smtp unavailable] }
+            data: { type: object, additionalProperties: false }
+    PointsConflictError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { type: integer, enum: [40014, 40015] }
+            data: { type: object, additionalProperties: false }
+    SettingsConflictError:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            code: { enum: [40013] }
+            message: { enum: [settings conflict] }
+            data: { type: object, additionalProperties: false }

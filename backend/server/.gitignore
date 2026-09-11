@@ -1,0 +1,30 @@
+# Local configuration and secrets
+configs/config.local.toml
+configs/*.local.toml
+configs/*.local.env
+*.secret.toml
+.env
+.env.*
+
+# Binaries and build output
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+/server
+/cmd/server/server
+
+# Coverage
+coverage.out
+coverage.html
+*.coverprofile
+
+# IDE and OS metadata
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
