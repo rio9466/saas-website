@@ -12,4 +12,4 @@
 - `master-relay` is the AI integration branch and the default base for all AI work. Do not commit directly to `master`.
 - Never merge into `master` unless the user explicitly agrees first.
 - All branch merges happen on `master-relay`. Branch feature work off `master-relay` and merge back into `master-relay`.
-- Use git worktrees. This repo's `master-relay` worktree lives at `.worktrees/master-relay` (inside the repo root, ignored via `.git/info/exclude`); the repo root checkout stays on `master`.
+- Use git worktrees. This repo's `master-relay` worktree lives at `../saas-website.worktrees/master-relay`, a sibling of the repo root; the repo root checkout stays on `master`.
