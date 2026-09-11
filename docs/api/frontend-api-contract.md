@@ -244,6 +244,23 @@ Cache-Control: public, max-age=60, stale-while-revalidate=300
 
 前端 sitemap 由 §4.6 页面列表、§4.7 文档列表 + 固定路由生成，不额外提供接口。
 
+### 4.10 `POST /api/v1/public/page-view`（访问上报）
+
+官网每次页面浏览上报一次，供管理端工作台统计 PV 与访问来源。
+
+请求：
+
+```json
+{ "path": "/features", "referrer": "https://www.baidu.com/s?wd=acme", "locale": "zh-CN" }
+```
+
+- `path` 必填，站内路径（以 `/` 开头，长度 ≤ 512）；不合法的上报静默丢弃。
+- `referrer` 可空：为空或非 `http(s)` → 来源记为固定字符串 `direct`；否则取 **host**（不含协议/路径，保留子域，如 `www.baidu.com`）。**不做域名识别/归类**。
+- `locale` 可选。
+- 成功 `200`：`{ "code": 0, "message": "success", "data": {}, "request_id": "..." }`；响应 `Cache-Control: no-store`。
+- 限流：每 IP 每小时上限（宽松，防刷）；Redis 故障时 fail-open（直接接受），因为仅统计用。
+- 无需登录，不写审计。
+
 ---
 
 ## 5. 业务用户接口
@@ -330,7 +347,7 @@ Cache-Control: public, max-age=60, stale-while-revalidate=300
 
 ### 6.1 约定
 
-- 权限码：`admin.content.read`、`admin.content.manage`、`admin.contact.read`、`admin.contact.manage`（命名沿用 `admin.<resource>.<action>`）。
+- 权限码：`admin.content.read`、`admin.content.manage`、`admin.contact.read`、`admin.contact.manage`、`admin.analytics.read`（命名沿用 `admin.<resource>.<action>`）。
 - 所有写操作走现有权限校验 + pending-first 审计。
 - 列表分页同 §1.2；`GET` 详情返回**全语言**内容，供后台按语言 Tab 编辑。
 - 多语言写入统一使用 `translations` 映射：
@@ -363,6 +380,35 @@ Cache-Control: public, max-age=60, stale-while-revalidate=300
 | 文档文章 | `GET|POST /api/v1/admin/doc-articles`，`GET|PATCH|DELETE /{id}` | 顶层 `category_id` |
 | 媒体 | `POST /api/v1/admin/media`（multipart），`GET /api/v1/admin/media`，`DELETE /{id}` | 返回 `{id,url,mime,size,width,height}` |
 | 联系表单 | `GET /api/v1/admin/contact-submissions`，`GET|PATCH /{id}` | `status`: `new`/`read`/`handled` |
+| 访问统计 | `GET /api/v1/admin/analytics/overview?range=today|7d|30d` | 见 §6.3；权限 `admin.analytics.read` |
+
+### 6.3 `GET /api/v1/admin/analytics/overview`
+
+- `range`：`today`（默认，服务器时区当日）| `7d` | `30d`（含当日的滚动窗口）。
+- 权限：`admin.analytics.read`。响应 `Cache-Control: no-store`。
+
+```json
+{
+  "code": 0, "message": "success",
+  "data": {
+    "range": "7d",
+    "pv": 12345,
+    "source_count": 3,
+    "sources": [
+      { "source": "direct", "count": 8000 },
+      { "source": "www.baidu.com", "count": 3000 },
+      { "source": "github.com", "count": 1345 }
+    ]
+  },
+  "request_id": "..."
+}
+```
+
+- `pv`：该时间窗内的页面浏览次数（§4.10 上报条数）。
+- `sources`：按去重后的来源（`direct` 或 referrer host）聚合，按 `count` 降序，最多返回前 50。
+- `source_count`：`sources` 数量（用于工作台「访问来源」卡片）。
+- 注册人数与未读留言不在本接口，由管理端分别取 `/api/v1/admin/users` 与
+  `/api/v1/admin/contact-submissions?status=new` 的 `total`。
 
 > 管理端接口的完整 OpenAPI 由后端任务在 `backend/server/docs/openapi.yaml` 中补齐；
 > 管理后台（`backend/server/admin/`）与 Go 服务同属后端分支，二者以 OpenAPI + 本文件为准。
@@ -419,3 +465,4 @@ runtimeConfig: {
 | ---- | ---- | ---- |
 | 2026-09-11 | v1 基线：信封/认证/错误码/公开内容/用户/管理端约定与前端规定 | master-relay |
 | 2026-09-11 | v1.1：新增 §5.7 邮件链接约定（验证/重置链接携带 email） | master-relay |
+| 2026-09-11 | v1.2：新增 §4.10 访问上报与 §6.3 访问统计接口（PV / 访问来源） | master-relay |
