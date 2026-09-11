@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rio9466/easy-admin/server/internal/domain/adminauth"
+	"github.com/rio9466/easy-admin/server/internal/domain/contact"
 	"github.com/rio9466/easy-admin/server/internal/domain/content"
 	"github.com/rio9466/easy-admin/server/internal/transport/http/handler"
 	"github.com/rio9466/easy-admin/server/internal/transport/http/middleware"
@@ -56,6 +57,8 @@ func NewRouter(deps Dependencies) *gin.Engine {
 		r.GET("/api/v1/public/pages/:slug", contentPublic.Page)
 		r.GET("/api/v1/public/docs", contentPublic.Docs)
 		r.GET("/api/v1/public/docs/:slug", contentPublic.Doc)
+		r.POST("/api/v1/public/contact", contentPublic.Contact)
+		r.GET("/media/:filename", contentPublic.MediaFile)
 	}
 
 	if deps.AdminAuth == nil && deps.UserClient == nil && deps.UserAdmin == nil {
@@ -260,6 +263,22 @@ func NewRouter(deps Dependencies) *gin.Engine {
 			docArticles.GET("/:id", middleware.RequirePermission(content.PermissionRead), contentHandlers.GetDocArticle)
 			docArticles.PATCH("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.UpdateDocArticle)
 			docArticles.DELETE("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.DeleteDocArticle)
+		}
+
+		contactSubmissions := v1.Group("/contact-submissions")
+		contactSubmissions.Use(authenticate)
+		{
+			contactSubmissions.GET("", middleware.RequirePermission(contact.PermissionRead), contentHandlers.ListContactSubmissions)
+			contactSubmissions.GET("/:id", middleware.RequirePermission(contact.PermissionRead), contentHandlers.GetContactSubmission)
+			contactSubmissions.PATCH("/:id", middleware.RequirePermission(contact.PermissionManage), contentHandlers.UpdateContactSubmissionStatus)
+		}
+
+		media := v1.Group("/media")
+		media.Use(authenticate)
+		{
+			media.POST("", middleware.RequirePermission(content.PermissionManage), contentHandlers.UploadMedia)
+			media.GET("", middleware.RequirePermission(content.PermissionManage), contentHandlers.ListMedia)
+			media.DELETE("/:id", middleware.RequirePermission(content.PermissionManage), contentHandlers.DeleteMedia)
 		}
 	}
 

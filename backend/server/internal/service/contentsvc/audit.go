@@ -40,18 +40,25 @@ const (
 	ActionDocArticleCreate = "content.doc_article.create"
 	ActionDocArticleUpdate = "content.doc_article.update"
 	ActionDocArticleDelete = "content.doc_article.delete"
+
+	ActionContactStatusUpdate = "contact.submission.update"
+
+	ActionMediaUpload = "content.media.upload"
+	ActionMediaDelete = "content.media.delete"
 )
 
 // Resource identifiers for content audit events.
 const (
-	ResourceSiteSettings = "site_settings"
-	ResourceNavigation   = "navigation_item"
-	ResourceHomeSection  = "home_section"
-	ResourceFeature      = "feature"
-	ResourcePricingPlan  = "pricing_plan"
-	ResourcePage         = "page"
-	ResourceDocCategory  = "doc_category"
-	ResourceDocArticle   = "doc_article"
+	ResourceSiteSettings      = "site_settings"
+	ResourceNavigation        = "navigation_item"
+	ResourceHomeSection       = "home_section"
+	ResourceFeature           = "feature"
+	ResourcePricingPlan       = "pricing_plan"
+	ResourcePage              = "page"
+	ResourceDocCategory       = "doc_category"
+	ResourceDocArticle        = "doc_article"
+	ResourceContactSubmission = "contact_submission"
+	ResourceMedia             = "media_asset"
 )
 
 // safeDetailKeys allowlist: only these fields can be written into audit
@@ -70,6 +77,11 @@ var safeDetailKeys = map[string]struct{}{
 	"parent_id":      {},
 	"section_type":   {},
 	"outcome_hint":   {},
+	"status":         {},
+	"mime":           {},
+	"size_bytes":     {},
+	"width":          {},
+	"height":         {},
 }
 
 func redactDetails(in map[string]any) map[string]any {

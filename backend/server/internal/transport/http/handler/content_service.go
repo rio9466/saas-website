@@ -2,9 +2,12 @@ package handler
 
 import (
 	"context"
+	"io"
 
 	"github.com/rio9466/easy-admin/server/internal/domain/adminauth"
+	"github.com/rio9466/easy-admin/server/internal/domain/contact"
 	"github.com/rio9466/easy-admin/server/internal/domain/content"
+	"github.com/rio9466/easy-admin/server/internal/domain/media"
 	contentsvc "github.com/rio9466/easy-admin/server/internal/service/contentsvc"
 )
 
@@ -62,6 +65,20 @@ type ContentService interface {
 	CreateDocArticle(ctx context.Context, actor Actor, in contentsvc.DocArticleInput) (*content.DocArticle, error)
 	UpdateDocArticle(ctx context.Context, actor Actor, id int64, in contentsvc.DocArticleInput) (*content.DocArticle, error)
 	DeleteDocArticle(ctx context.Context, actor Actor, id int64) error
+
+	// Public contact form.
+	SubmitContact(ctx context.Context, in contact.SubmissionInput, sourceIP, userAgent string) (*contact.Receipt, error)
+
+	// Administrator contact inbox.
+	ListContactSubmissions(ctx context.Context, actor Actor, status string, page, pageSize int) (adminauth.Page[contact.Submission], error)
+	GetContactSubmission(ctx context.Context, actor Actor, id int64) (*contact.Submission, error)
+	UpdateContactSubmissionStatus(ctx context.Context, actor Actor, id int64, status string) (*contact.Submission, error)
+
+	// Administrator media library.
+	UploadMedia(ctx context.Context, actor Actor, originalName string, size int64, body io.Reader) (*media.Asset, error)
+	ListMedia(ctx context.Context, actor Actor, page, pageSize int) (adminauth.Page[media.Asset], error)
+	DeleteMedia(ctx context.Context, actor Actor, id int64) error
+	OpenMedia(filename string) (media.StoredFile, error)
 }
 
 // ContentServiceAdapter adapts *contentsvc.Service to ContentService.
@@ -245,4 +262,36 @@ func (a *ContentServiceAdapter) UpdateDocArticle(ctx context.Context, actor Acto
 
 func (a *ContentServiceAdapter) DeleteDocArticle(ctx context.Context, actor Actor, id int64) error {
 	return a.Svc.DeleteDocArticle(ctx, toContentActor(actor), id)
+}
+
+func (a *ContentServiceAdapter) SubmitContact(ctx context.Context, in contact.SubmissionInput, sourceIP, userAgent string) (*contact.Receipt, error) {
+	return a.Svc.SubmitContact(ctx, in, sourceIP, userAgent)
+}
+
+func (a *ContentServiceAdapter) ListContactSubmissions(ctx context.Context, actor Actor, status string, page, pageSize int) (adminauth.Page[contact.Submission], error) {
+	return a.Svc.ListContactSubmissions(ctx, toContentActor(actor), status, page, pageSize)
+}
+
+func (a *ContentServiceAdapter) GetContactSubmission(ctx context.Context, actor Actor, id int64) (*contact.Submission, error) {
+	return a.Svc.GetContactSubmission(ctx, toContentActor(actor), id)
+}
+
+func (a *ContentServiceAdapter) UpdateContactSubmissionStatus(ctx context.Context, actor Actor, id int64, status string) (*contact.Submission, error) {
+	return a.Svc.UpdateContactSubmissionStatus(ctx, toContentActor(actor), id, status)
+}
+
+func (a *ContentServiceAdapter) UploadMedia(ctx context.Context, actor Actor, originalName string, size int64, body io.Reader) (*media.Asset, error) {
+	return a.Svc.UploadMedia(ctx, toContentActor(actor), originalName, size, body)
+}
+
+func (a *ContentServiceAdapter) ListMedia(ctx context.Context, actor Actor, page, pageSize int) (adminauth.Page[media.Asset], error) {
+	return a.Svc.ListMedia(ctx, toContentActor(actor), page, pageSize)
+}
+
+func (a *ContentServiceAdapter) DeleteMedia(ctx context.Context, actor Actor, id int64) error {
+	return a.Svc.DeleteMedia(ctx, toContentActor(actor), id)
+}
+
+func (a *ContentServiceAdapter) OpenMedia(filename string) (media.StoredFile, error) {
+	return a.Svc.OpenMedia(filename)
 }
