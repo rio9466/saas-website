@@ -21,6 +21,7 @@
 | FE-02 | 公开页面（首页/功能/价格/关于/文档）              | `fe-public-pages`        | `master-relay` | BE-01、BE-02、FE-01     | done | 已合入 fa9a792（分支已删） |
 | FE-03 | 登录 / 注册 / 用户中心                            | `fe-auth-account`        | `master-relay` | BE-03、FE-01、FE-02     | done | 已合入 c251ffd（含 /api 代理 502 修复） |
 | HOTFIX-01 | 运行时错误（Nuxt 500 + admin .env 崩溃）    | `hotfix-runtime-errors`  | `master-relay` | —                       | done | 已合入 5e5f809          |
+| FIX-FE-UX | 前端体验：语言切换/记忆、表单红框、页脚居中 | `fix-fe-ux` | `master-relay` | — | todo | worktree 已建，待认领 |
 
 ## 更新规则
 
