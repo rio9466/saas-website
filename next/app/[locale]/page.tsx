@@ -1,75 +1,81 @@
+import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
+import { notFound } from "next/navigation";
+import { HomeSection, KNOWN_SECTION_TYPES } from "@/components/home-section";
+import { LocalizedLink } from "@/components/localized-link";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { getSiteSettings } from "@/lib/site-settings";
+import { getFeatures, getHomeSections } from "@/lib/public-content";
+import { pageMetadata } from "@/lib/seo";
 import { routing } from "@/i18n/routing";
 
 interface LocaleRouteProps {
   params: Promise<{ locale: string }>;
 }
 
+export async function generateMetadata({
+  params,
+}: LocaleRouteProps): Promise<Metadata> {
+  const requested = (await params).locale;
+  const locale = hasLocale(routing.locales, requested)
+    ? requested
+    : routing.defaultLocale;
+  return pageMetadata({ locale, path: "/" });
+}
+
 /**
- * Foundation placeholder home page. The real, content-driven home page is
- * built in NEXT-02; this only proves the shell, i18n and settings pipeline.
+ * Content-driven home page (contract §4.3). Sections come from
+ * `GET /public/home`; unknown types are ignored for forward compatibility, and
+ * an empty result falls back to a built-in hero.
  */
 export default async function HomePage({ params }: LocaleRouteProps) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) {
-    return null;
+    notFound();
   }
-
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale });
-  const settings = await getSiteSettings(locale, t);
+  const [sections, features] = await Promise.all([
+    getHomeSections(locale),
+    getFeatures(locale),
+  ]);
+  const known = sections.filter((section) =>
+    KNOWN_SECTION_TYPES.has(section.type),
+  );
 
-  return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-16">
-      <div className="mx-auto max-w-2xl text-center">
-        <h1 className="font-heading text-4xl font-semibold tracking-tight">
-          {settings.site_name}
+  if (!known.length) {
+    return (
+      <section className="mx-auto w-full max-w-4xl px-4 py-24 text-center sm:py-32">
+        <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
+          {t("home.fallbackTitle")}
         </h1>
-        {settings.tagline ? (
-          <p className="mt-4 text-lg text-muted-foreground">
-            {settings.tagline}
-          </p>
-        ) : null}
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link href="/register" className={buttonVariants({ size: "lg" })}>
-            {t("home.primaryCta")}
-          </Link>
-          <Link
+        <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
+          {t("home.fallbackDescription")}
+        </p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <LocalizedLink
+            href="/register"
+            className={buttonVariants({ size: "lg" })}
+          >
+            {t("home.fallbackPrimary")}
+          </LocalizedLink>
+          <LocalizedLink
             href="/contact"
             className={buttonVariants({ variant: "outline", size: "lg" })}
           >
-            {t("home.secondaryCta")}
-          </Link>
+            {t("home.fallbackSecondary")}
+          </LocalizedLink>
         </div>
-      </div>
+      </section>
+    );
+  }
 
-      <Card className="mx-auto mt-12 max-w-xl">
-        <CardHeader>
-          <CardTitle>{settings.site_name}</CardTitle>
-          <CardDescription>{t("home.placeholder")}</CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          {settings.contact_email ? (
-            <p>
-              <a href={`mailto:${settings.contact_email}`}>
-                {settings.contact_email}
-              </a>
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
-    </section>
+  return (
+    <>
+      {known.map((section) => (
+        <HomeSection key={section.id} section={section} features={features} />
+      ))}
+    </>
   );
 }

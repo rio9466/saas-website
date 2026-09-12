@@ -5,6 +5,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { PageViewReporter } from "@/components/page-view-reporter";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getSiteSettings } from "@/lib/site-settings";
 import { buildMetadata } from "@/lib/seo";
@@ -58,6 +59,7 @@ export default async function LocaleLayout({
             <SiteHeader settings={settings} />
             <main className="flex-1">{children}</main>
             <SiteFooter settings={settings} />
+            <PageViewReporter />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

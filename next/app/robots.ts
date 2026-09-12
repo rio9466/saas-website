@@ -1,7 +1,12 @@
 import type { MetadataRoute } from "next";
+import { routing } from "@/i18n/routing";
+import { siteOrigin } from "@/lib/seo";
+import { fetchSiteSettings } from "@/lib/site-settings";
 
-/** SEO baseline. The language-aware sitemap is added with NEXT-02. */
-export default function robots(): MetadataRoute.Robots {
+/** SEO baseline; points crawlers at the language-aware sitemap. */
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const origin = siteOrigin(await fetchSiteSettings(routing.defaultLocale));
+
   return {
     rules: [
       {
@@ -10,5 +15,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/"],
       },
     ],
+    sitemap: `${origin}/sitemap.xml`,
   };
 }

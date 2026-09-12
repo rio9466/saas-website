@@ -17,13 +17,14 @@ import { SiteLogo } from "@/components/site-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { SiteSettings } from "@/lib/site-settings";
 
-// Static nav for the foundation; backend-driven navigation arrives with the
-// public pages (NEXT-02).
+// Static site navigation. The localized label and prefix come from the i18n
+// layer, so every entry stays on the right language path.
 const NAV_ITEMS = [
   { href: "/", key: "nav.home" },
   { href: "/features", key: "nav.features" },
   { href: "/pricing", key: "nav.pricing" },
   { href: "/docs", key: "nav.docs" },
+  { href: "/about", key: "nav.about" },
   { href: "/contact", key: "nav.contact" },
 ] as const;
 
