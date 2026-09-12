@@ -39,3 +39,4 @@ def gets an ephemeral branch cut from `master-relay`.
 - To start a task: switch to the target branch in Orca, open a pi terminal in that worktree,
   and hand pi the task document. Feature work merges back into `master-relay`.
 - Full workflow reference (roles, task dispatch, initialization paths): `ORCA_WORKFLOW.md`.
+- Adopting this workflow in a new project (what you need + which docs to copy): `docs/adopting-orca-workflow.md`.
