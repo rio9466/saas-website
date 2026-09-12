@@ -16,7 +16,7 @@ a project is initialized both with and without an existing scaffold.
 | Branch         | Role                                        | Base           | Merge target                     |
 | -------------- | ------------------------------------------- | -------------- | -------------------------------- |
 | `master`       | Frozen release branch                              | —              | only with explicit user approval |
-| `master-relay` | AI working / integration branch; orchestrator home | `master`       | —                                |
+| `master-relay` | AI working / integration branch (managed by the conversation pi) | `master`       | —                                |
 | `<task>`       | Ephemeral branch, one per task                     | `master-relay` | `master-relay`                   |
 
 Rules:
@@ -29,13 +29,14 @@ Rules:
 
 ## 2. Roles
 
-Three pi roles, each pinned to a branch:
+Two pi roles. The former **orchestrator/planning pi is merged into the conversation pi** — there
+is no separate relay agent. The long-lived branches stay: `master` (release baseline) and
+`master-relay` (integration branch, managed by the conversation pi).
 
-| Role                | Home branch          | Owns                                                                                     |
-| ------------------- | -------------------- | ---------------------------------------------------------------------------------------- |
-| **Conversation pi** | `master` (main checkout) | Dialogue, workflow guidance, acceptance review, any git operation with user permission |
-| **Orchestrator pi** | `master-relay`       | PRD / task documents, the status ledger, task worktrees, merges into `master-relay`      |
-| **Executor pi**     | `<task>`             | Implementing exactly one task document; reporting evidence back                          |
+| Role                | Home branch              | Owns                                                                                                                       |
+| ------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| **Conversation pi** | `master` (main checkout) | Dialogue, planning (PRD/contract/task docs), project setup, worktree dispatch, acceptance review, git merges and releases |
+| **Executor pi**     | `<task>`                 | Implementing exactly one task document; reporting evidence back. Never merges.                                             |
 
 ### Conversation pi (`master`, main checkout)
 
@@ -46,8 +47,15 @@ Responsibilities:
 
 - **Dialogue and decisions** — clarify requirements, resolve ambiguity, capture product and
   process decisions. Surface tradeoffs instead of guessing.
+- **Planning** — own the PRD, the API contract, ADRs, and the task documents, and keep
+  `docs/tasks/STATUS.md`. These are authored on `master-relay`.
 - **Workflow guidance** — tell the user which branch to open, which task is ready (respecting
   dependencies), and hand over a ready-to-paste executor prompt.
+- **Project setup** — initialize new projects and adopt existing projects into this workflow.
+  Ask the user first whether it is a new or an existing project, then follow
+  `docs/adopting-orca-workflow.md` (see *Project setup* below).
+- **Worktree dispatch** — create each task's branch/worktree from `master-relay` with the Orca
+  CLI (see *Worktree and Orca basics* below).
 - **Acceptance review** — independently verify executor evidence (commands + results) against
   the task's acceptance criteria and the PRD. Approve or send back with concrete feedback; no
   rubber-stamping.
@@ -65,11 +73,45 @@ It must not:
 
 - Write business code or implement tasks.
 - Advance `master` without the user's explicit approval.
-- Do an executor's work on a task branch, or bypass `master-relay`.
-- Duplicate the orchestrator's ledger bookkeeping; it verifies, the orchestrator records.
+- Do an executor's work on a task branch.
 
-It may edit process/rule documents on `master-relay` (this file, root `AGENTS.md`), but not
-business code.
+It may edit process/rule and planning documents on `master-relay` (this file, root
+`AGENTS.md`, the PRD/contract, `docs/tasks/**`), but not business code.
+
+#### Project setup (new or existing)
+
+When the user asks to start or onboard a project, **first ask whether it is a new project or an
+existing project being adopted into the workflow**, then follow
+`docs/adopting-orca-workflow.md`.
+
+- **New project** — scaffold the governance docs (`AGENTS.md`, `ORCA_WORKFLOW.md`, `docs/`
+  skeleton), create the branches (`master`, `master-relay`), create a git-ignored
+  `CONVERSATION_MEMORY.md`, then plan the first tasks.
+- **Existing project** — audit the repo, add or adapt the governance docs, create `master-relay`
+  from the current default branch, tag a baseline, and record facts in memory.
+
+Ask the user for at least: project name / remote / default branch name, the areas and their
+stacks, ports and environment conventions, and the starting version.
+
+#### Worktree and Orca basics
+
+One task = one Orca worktree cut from `master-relay`. Commands the conversation pi needs:
+
+```bash
+# create a task worktree (branch) from master-relay
+orca worktree create --repo id:<repoId> --name <task> --base-branch master-relay --no-parent --json
+orca worktree list --json
+orca worktree rm --worktree branch:<task> --force --json
+orca worktree set --worktree branch:<task> --comment "claimed <ID>" --workspace-status in-progress
+# run and prompt an executor in that worktree
+orca terminal create --worktree branch:<task> --command "pi" --json
+orca terminal send --terminal <handle> --text "<task brief>" --enter --json
+```
+
+- Prefer `--json`; selectors: `id:<repoId>::<path>`, `branch:<name>`, `path:<abs>`, `active`.
+- Orca auto-discovers external `git worktree`s. If `/usr/local/bin/orca` is a restricted
+  symlink, invoke the real entrypoint:
+  `ELECTRON_RUN_AS_NODE=1 /Applications/Orca.app/Contents/MacOS/Orca /Applications/Orca.app/Contents/Resources/app.asar.unpacked/out/cli/index.js …`
 
 #### Persistent memory and user preferences
 
@@ -104,35 +146,28 @@ When to read and write it:
 
 Boundaries:
 
-- `CONVERSATION_MEMORY.md` is the conversation pi's own memory; the orchestrator and executors
-  do not read or write it.
+- `CONVERSATION_MEMORY.md` is the conversation pi's own memory; executors do not read or write
+  it.
 - It is not a product document: the PRD holds product requirements, `docs/tasks/STATUS.md`
   holds the task ledger, and this memory holds the assistant's durable context and the user
   profile.
 
-### Orchestrator pi (`master-relay`)
-
-Its scope is only `master-relay` and the executor/task branches. It turns the PRD into task
-documents, maintains `docs/tasks/STATUS.md`, creates task worktrees from `master-relay`, does
-the technical review, and merges task branches into `master-relay` with `--no-ff`.
-
-It must never operate on `master` — no commits, merges, or branch changes there. Only the
-conversation pi touches `master`, and only with the user's approval.
-
 ### Executor pi (`<task>`)
 
 Implements exactly one task document on its task branch, verifies with the task's commands,
-reports command + result, and never edits task docs, the contract, or other areas. It never
-merges.
+reports command + result, and never edits task docs, the contract, or other areas.
+
+**It must never merge** — not into `master-relay`, not into `master`. It reports evidence and
+lets the conversation pi review and merge.
 
 ## 3. Task dispatch
 
-1. The orchestrator writes a task document, e.g. `docs/tasks/<task>.md`, with goal, scope,
+1. The conversation pi writes a task document, e.g. `docs/tasks/<task>.md`, with goal, scope,
    out-of-scope, files, acceptance criteria, and verification steps.
 2. The user switches to the target branch in Orca and opens a pi terminal in that worktree.
 3. The user hands pi the task document (or its path).
 4. The executor implements it, runs verification, and reports command + result.
-5. The orchestrator reviews and merges into `master-relay`.
+5. The conversation pi reviews and merges into `master-relay`.
 
 Optional CLI dispatch:
 
@@ -149,12 +184,12 @@ Rules:
 
 ### Claiming and status
 
-A task is **assigned** when the orchestrator creates its dedicated branch/worktree from
+A task is **assigned** when the conversation pi creates its dedicated branch/worktree from
 `master-relay`. It is **claimed** when the executor starts work on that branch. Status is
 recorded in two places:
 
 - **Durable ledger**: `docs/tasks/STATUS.md` on `master-relay`, maintained by the
-  orchestrator. Executors never edit it.
+  the conversation pi. Executors never edit it.
 - **Branch evidence**: the task branch's commit history. The first commit is
   `chore(<ID>): claim task`; implementation commits use `feat(<ID>): ...` / `fix(<ID>): ...`.
 
@@ -163,20 +198,20 @@ Status values: `todo` (assigned, unclaimed), `in-progress` (claimed), `in-review
 
 Claiming steps:
 
-1. Orchestrator: create the task worktree from `master-relay` and add its row to
+1. Conversation pi: create the task worktree from `master-relay` and add its row to
    `docs/tasks/STATUS.md` as `todo`.
 2. Executor: read the task doc, restate scope / assumptions / plan, and make the first commit
    `chore(<ID>): claim task`.
 3. Executor: implement, verify with the task doc's commands, report command + result, and ask
    for review.
-4. Orchestrator: set the ledger row to `in-review`, review, merge `--no-ff` into
+4. Conversation pi: set the ledger row to `in-review`, review, merge `--no-ff` into
    `master-relay`, then set it to `done` with the merge commit as evidence.
 
 Rules:
 
 - Only one branch works a task ID. If a task is already `in-progress`, do not start it again.
 - Executors must not edit `docs/tasks/**` (task docs and the ledger); they report status and
-  the orchestrator records it.
+  the conversation pi records it.
 - Delete a task branch only after its task is `done`.
 
 ## 4. Documents and ownership
@@ -203,8 +238,8 @@ Strong rules:
   `master-relay`. Open a pi terminal on `master-relay` (or on a docs branch cut from it) to do
   this."
 - An area branch owns only its own area's specs and `AGENTS.md`. Never write the other area's.
-- The orchestrator writes task documents on `master-relay`. An executor reads its assigned
-  task doc and must not rewrite it without the orchestrator's approval.
+- The conversation pi writes task documents on `master-relay`. An executor reads its assigned
+  task doc and must not rewrite it without the conversation pi's approval.
 
 Where to do what:
 

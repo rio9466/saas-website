@@ -18,18 +18,22 @@
 | 分支 | 作用 | 谁能动 |
 | ---- | ---- | ------ |
 | `master` | 发布基线，只读 | 只有“对话 pi”，且需用户明确同意才合并 |
-| `master-relay` | AI 集成分支；编排 pi 的家 | 编排 pi（任务合回这里） |
+| `master-relay` | AI 集成分支（由对话 pi 管理） | 对话 pi（任务合回这里） |
 | `<task>` | 每个任务一条临时分支 | 执行 pi |
 
 规则：新任务分支**只从 `master-relay` 切**，合回 `master-relay`；不直接提交 `master`。
 
-## 3. 三个角色
+## 3. 两个角色
 
-- **对话 pi**（跑在 `master` 主检出）：只做对话、方案、工作流引导、独立验收、`master-relay`→`master` 合并与发布。
+原「编排/规划 pi」已并入对话 pi，不再有独立的 relay pi；`master-relay` 仍是集成分支（由对话 pi 管理）。
+
+- **对话 pi**（跑在 `master` 主检出）：对话/决策、**规划（PRD/契约/任务拆分、维护台账）**、
+  **项目初始化与老项目接入**、worktree 派发、独立验收、所有 git 合并与发布。
   不写业务代码。持有**本地持久记忆**（见 §6）。用户允许时可做任意 git 操作。
-- **编排 pi**（跑在 `master-relay`）：写 PRD/任务文档、维护台账、建任务分支、技术审查、把任务分支合回 `master-relay`。
-  **永远不碰 `master`**。
-- **执行 pi**（跑在任务分支）：只实现一个任务、自测、回报「命令 + 结果」。不改契约/跨领域文档、不合并。
+- **执行 pi**（跑在任务分支）：只实现一个任务、自测、回报「命令 + 结果」。
+  不改契约/跨领域文档，**永不合并**（既不进 `master-relay` 也不进 `master`）。
+
+> worktree 初始化与 Orca 基础指令，见参考项目的 `ORCA_WORKFLOW.md` §2「Worktree and Orca basics」。
 
 ## 4. 必须的文档支撑（复制这一套）
 
@@ -47,21 +51,30 @@
 
 > 关键点：`AGENTS.md` / `ORCA_WORKFLOW.md` 是“强规定”，agent 打开就自动读到；其余按需。
 
-## 5. 新项目初始化清单
+## 5. 项目初始化清单（新项目 / 老项目）
+
+> **第一步：先问用户——这是「新项目」还是「要接入工作流的老项目」？** 再分下面两条路径。
+
+### A. 新项目
 
 1. **建仓库**：`master` 为默认分支；推送到远端。
-2. **抄治理文档**：从参考项目复制 `AGENTS.md`、`ORCA_WORKFLOW.md`、`.gitignore`，以及 `docs/` 目录骨架
+2. **抄治理文档**：复制 `AGENTS.md`、`ORCA_WORKFLOW.md`、`.gitignore`，以及 `docs/` 骨架
    （`docs/README.md`、`docs/prd/`、`docs/api/`、`docs/tasks/README.md` + `STATUS.md`）。
-3. **改占位**（务必替换）：
-   - 项目名、仓库路径、远端地址；
-   - **区域目录**（见 §7）；
-   - 端口、数据库/Redis、本地运行配置约定；
-   - `docs/prd/*`、`docs/api/*` 换成你的项目内容。
-4. **建 AI 工作分支**：`git branch master-relay master`（并按需在 Orca 建 worktree）。
-5. **定义区域**：确定项目有哪些 area（如 `frontend/`、`backend/`，或 `web/`、`api/`、`mobile/`），
-   每个 area 放一个 `AGENTS.md`，并在根 `AGENTS.md`/`ORCA_WORKFLOW.md` 的区域表里登记。
-6. **建本地记忆**：仓库根新建 `CONVERSATION_MEMORY.md` 并加进 `.gitignore`。
-7. **开始**：编排 pi 写 PRD → 拆任务文档 → 为任务建分支/worktree → 派发执行 pi → 验收合并。
+3. **改占位**（务必替换）：项目名/仓库路径/远端；**区域目录**（见 §7）；端口、数据库、本地配置约定；
+   `docs/prd/*`、`docs/api/*` 换成你的内容。
+4. **建集成分支**：`git branch master-relay master`（并按需在 Orca 建 worktree）。
+5. **定义区域**：确定项目的 area，每个 area 放一个 `AGENTS.md`，在根 `AGENTS.md`/`ORCA_WORKFLOW.md` 登记。
+6. **建本地记忆**：仓库根 `CONVERSATION_MEMORY.md` 并加进 `.gitignore`。
+7. **开始**：对话 pi 写 PRD → 拆任务文档 → 建任务分支/worktree → 派发执行 pi → 验收合并。
+
+### B. 老项目接入工作流
+
+1. **审计**：确认默认分支、目录结构、技术栈、构建/测试命令、端口与依赖（数据库/缓存等）。
+2. **补治理文档**：加入/改造 `AGENTS.md`、`ORCA_WORKFLOW.md`、`docs/` 骨架与各区域 `AGENTS.md`。
+3. **建集成分支**：从默认分支建 `master-relay`；任务从 `master-relay` 切、合回 `master-relay`。
+4. **打基线标签**：在当前状态打一个 `vX.Y.Z`，作为接入点（此前提交与本次接入解耦）。
+5. **建本地记忆**：`CONVERSATION_MEMORY.md`（git-ignored），记录项目事实、坑与约定。
+6. **开始**：对话 pi 写 PRD/任务 → 建任务 worktree → 派发执行 pi → 验收合并。
 
 ## 6. 对话 pi 的持久记忆
 
