@@ -431,6 +431,10 @@ runtimeConfig: {
 - 所有前端请求统一通过 `useApi()` 组合式函数，禁止组件内直接 `$fetch` 后端地址。
 - SSR：使用 `apiInternalBase` 绝对地址；客户端：使用 `public.apiBase` 相对地址。
 
+> **本契约的「前端」适用于所有前端模板**：`frontend/`（Nuxt 4 + Nuxt UI）与 `next/`（Next.js + shadcn/ui）。
+> 两者都遵守本节规定。`next/` 的等价运行时变量为 `API_PROXY_TARGET`（浏览器同源 `/api/**` 的代理目标，需在
+> **运行时**逐请求转发，不要用构建期固定的 rewrite）与 `API_INTERNAL_BASE`（SSR 直连后端内网地址）。
+
 ### 7.2 API 客户端规则
 
 - 自动附加 `Authorization: Bearer`（来自内存 store）。
@@ -466,3 +470,4 @@ runtimeConfig: {
 | 2026-09-11 | v1 基线：信封/认证/错误码/公开内容/用户/管理端约定与前端规定 | master-relay |
 | 2026-09-11 | v1.1：新增 §5.7 邮件链接约定（验证/重置链接携带 email） | master-relay |
 | 2026-09-11 | v1.2：新增 §4.10 访问上报与 §6.3 访问统计接口（PV / 访问来源） | master-relay |
+| 2026-09-12 | v1.3：明确契约适用于所有前端模板（新增 `next/`），补充其运行时配置 | master-relay |

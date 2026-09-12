@@ -258,15 +258,17 @@ Vendor it as plain source. Never keep its git history, and never touch the sourc
 | -------------------------------- | ------------------------------------------------------ |
 | `AGENTS.md` (root)               | all branches: coding guidelines, git rules, branch scope |
 | `frontend/AGENTS.md`             | frontend workstream: only frontend branches edit `frontend/` |
+| `next/AGENTS.md`                 | next template (`next/`): only next branches edit `next/`     |
 | `backend/AGENTS.md`              | backend workstream: only backend branches edit `backend/`    |
 | `backend/server/AGENTS.md`       | Go service rules (vendored, inherited)                  |
 | `backend/server/admin/AGENTS.md` | admin console rules (vendored, inherited)               |
 
 Core cross-branch constraints:
 
-- A branch edits only its own area. Frontend branches must not modify `backend/`; backend
-  branches must not modify `frontend/`. Cross-area work needs two task branches or an
-  explicit exception in the task document.
+- A branch edits only its own area. `frontend/` (Nuxt 4) and `next/` (Next.js + shadcn/ui) are
+  two separate frontend templates: backend branches must not modify either, and a branch for one
+  template must not modify the other template or `backend/`. Cross-area work needs two task
+  branches or an explicit exception in the task document.
 - Never reintroduce easy-admin's git history, a submodule, or the original repo as a remote.
 - Keep `master` untouched.
 
