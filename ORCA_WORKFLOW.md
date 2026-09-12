@@ -5,7 +5,8 @@ a project is initialized both with and without an existing scaffold.
 
 ## 1. Model
 
-- One repo, `saas-website`, with two workstreams (`frontend/`, `backend/`).
+- One repo, `saas-website`, with several workstreams/areas. **Areas are defined by your project; the areas here are the examples this project used** (`frontend/`, `next/`, `backend/`).
+- To adopt this workflow in a new project, see `docs/adopting-orca-workflow.md` (reference implementation: https://github.com/rio9466/saas-website).
 - Orca manages git worktrees under `~/orca/workspaces/saas-website/<branch>`; the repo root
   `~/orca/projects/saas-website` stays on `master`.
 - One worktree = one branch = one agent writing at a time.
@@ -253,6 +254,8 @@ Vendor it as plain source. Never keep its git history, and never touch the sourc
 ## 6. Branch constraints (AGENTS.md)
 
 `AGENTS.md` files are layered; the nearest one wins.
+
+> Areas are defined by your project; the table below is the example used by this project.
 
 | File                             | Constrains                                             |
 | -------------------------------- | ------------------------------------------------------ |
