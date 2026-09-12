@@ -33,10 +33,12 @@ See `ORCA_WORKFLOW.md` §2 for the full role contract.
 
 ### Branch constraints
 
-- Each branch edits only its own area: frontend branches edit `frontend/`, backend branches edit `backend/`. Cross-area changes need separate task branches or an explicit exception in the task document.
+- Each branch edits only its own area: the two frontend templates (`frontend/` = Nuxt 4,
+  `next/` = Next.js + shadcn/ui), the backend (`backend/`), and cross-cutting docs. Cross-area
+  changes need separate task branches or an explicit exception in the task document.
 - New task branches are cut from `master-relay` and merged back into `master-relay`; `master` stays untouched unless the user explicitly approves.
 - Never reintroduce easy-admin's git history, add it as a submodule, or re-add the original repo as a remote.
-- Area rules live in `frontend/AGENTS.md` and `backend/AGENTS.md`; the nearest layered `AGENTS.md` wins.
+- Area rules live in `frontend/AGENTS.md`, `next/AGENTS.md`, and `backend/AGENTS.md`; the nearest layered `AGENTS.md` wins.
 - Full workflow, roles, task dispatch, and initialization paths: see `ORCA_WORKFLOW.md`.
 
 # Task claiming

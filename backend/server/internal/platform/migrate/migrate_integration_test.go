@@ -2,6 +2,7 @@ package migrate_test
 
 import (
 	"context"
+	"database/sql"
 	"os"
 	"testing"
 
@@ -62,8 +63,8 @@ func TestRunRealMigrationsAreIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("first run: %v", err)
 	}
-	if len(first.Applied) != 10 {
-		t.Fatalf("first run applied %d migrations, want 10: %+v", len(first.Applied), first)
+	if len(first.Applied) != 11 {
+		t.Fatalf("first run applied %d migrations, want 11: %+v", len(first.Applied), first)
 	}
 
 	second, err := migrate.Run(ctx, disposableDSN, root, "primary")
@@ -90,6 +91,80 @@ func TestRunRealMigrationsAreIdempotent(t *testing.T) {
 	if perms == 0 {
 		t.Fatal("permissions catalog must stay populated")
 	}
+
+	// The analytics read permission is seeded and granted to super_admin.
+	var analyticsGranted int
+	if err := queryCount(ctx, `
+SELECT COUNT(*)
+FROM role_permissions rp
+JOIN roles r ON r.id = rp.role_id
+JOIN permissions p ON p.id = rp.permission_id
+WHERE lower(r.code) = 'super_admin' AND p.code = 'admin.analytics.read'`, &analyticsGranted); err != nil {
+		t.Fatalf("count analytics grant: %v", err)
+	}
+	if analyticsGranted != 1 {
+		t.Fatalf("super_admin admin.analytics.read grants = %d, want 1", analyticsGranted)
+	}
+}
+
+// TestAnalyticsMigrationDownIsIdempotent proves 000011's down migration can be
+// re-run and that re-applying its up migration restores the schema and the
+// seeded permission/grant.
+func TestAnalyticsMigrationDownIsIdempotent(t *testing.T) {
+	root := findRepoRoot(t)
+
+	cleanup := newDisposableDB(t)
+	defer cleanup()
+
+	ctx := context.Background()
+	if _, err := migrate.Run(ctx, disposableDSN, root, "primary"); err != nil {
+		t.Fatalf("apply migrations: %v", err)
+	}
+
+	down, err := os.ReadFile(root + "/primary/000011_analytics.down.sql")
+	if err != nil {
+		t.Fatalf("read down migration: %v", err)
+	}
+	up, err := os.ReadFile(root + "/primary/000011_analytics.up.sql")
+	if err != nil {
+		t.Fatalf("read up migration: %v", err)
+	}
+
+	for i := 1; i <= 2; i++ {
+		if err := execSQL(ctx, string(down)); err != nil {
+			t.Fatalf("down run %d: %v", i, err)
+		}
+	}
+
+	var tables int
+	if err := queryCount(ctx, `SELECT COUNT(*)::int FROM information_schema.tables WHERE table_name = 'page_views'`, &tables); err != nil {
+		t.Fatalf("count page_views table: %v", err)
+	}
+	if tables != 0 {
+		t.Fatalf("page_views table still present after down: %d", tables)
+	}
+
+	if err := execSQL(ctx, string(up)); err != nil {
+		t.Fatalf("re-apply up: %v", err)
+	}
+
+	if err := queryCount(ctx, `SELECT COUNT(*)::int FROM information_schema.tables WHERE table_name = 'page_views'`, &tables); err != nil {
+		t.Fatalf("count page_views after re-up: %v", err)
+	}
+	if tables != 1 {
+		t.Fatalf("page_views table count after re-up = %d, want 1", tables)
+	}
+}
+
+// execSQL runs one migration file's statements against the disposable database.
+func execSQL(ctx context.Context, statement string) error {
+	db, err := sql.Open("pgx", disposableDSN)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	_, err = db.ExecContext(ctx, statement)
+	return err
 }
 
 func TestRunRealLogMigrationsAreIdempotent(t *testing.T) {

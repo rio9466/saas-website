@@ -1,283 +1,171 @@
 <script setup lang="ts">
-import { ref, markRaw } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import ReCol from "@/components/ReCol";
-import { useDark, randomGradient } from "./utils";
-import WelcomeTable from "./components/table/index.vue";
-import { ReNormalCountTo } from "@/components/ReCountTo";
-import { useRenderFlicker } from "@/components/ReFlicker";
-import { ChartBar, ChartLine, ChartRound } from "./components/charts";
 import Segmented, { type OptionsType } from "@/components/ReSegmented";
-import { chartData, barChartData, progressData, latestNewsData } from "./data";
+import { message } from "@/utils/message";
+import { getErrorMessage } from "@/utils/error";
+import { hasPerms } from "@/utils/perms";
+import { getAnalyticsOverviewApi } from "@/api/analytics";
+import { listUsersApi } from "@/api/users";
+import { listContactSubmissionsApi } from "@/api/contactSubmissions";
+import type { AnalyticsOverview, AnalyticsRange } from "@/api/contract";
+import AnalyticsSources from "./components/AnalyticsSources.vue";
 
 defineOptions({
   name: "Dashboard"
 });
 
-const { isDark } = useDark();
+/** 访问统计（overview）受 admin.analytics.read 约束；注册/未读各按自身权限展示 */
+const canReadAnalytics = computed(() => hasPerms("admin.analytics.read"));
+const canReadUsers = computed(() => hasPerms("admin.customer.read"));
+const canReadContact = computed(() => hasPerms("admin.contact.read"));
 
-const curWeek = ref(1); // 0上周、1本周
-const optionsBasis: Array<OptionsType> = [
-  {
-    label: "上周"
-  },
-  {
-    label: "本周"
-  }
+const RANGES: AnalyticsRange[] = ["today", "7d", "30d"];
+const rangeOptions: Array<OptionsType> = [
+  { label: "今日" },
+  { label: "7天" },
+  { label: "30天" }
 ];
+// ReSegmented 以索引作为 v-model，映射到接口的 range 参数
+const rangeIndex = ref(0);
+
+const analyticsLoading = ref(false);
+const overview = ref<AnalyticsOverview | null>(null);
+
+const usersLoading = ref(false);
+const userTotal = ref(0);
+
+const contactLoading = ref(false);
+const contactNewTotal = ref(0);
+
+async function loadOverview() {
+  if (!canReadAnalytics.value) return;
+  analyticsLoading.value = true;
+  try {
+    const res = await getAnalyticsOverviewApi(RANGES[rangeIndex.value]);
+    overview.value = res?.data ?? null;
+  } catch (error) {
+    message(getErrorMessage(error), { type: "error" });
+  } finally {
+    analyticsLoading.value = false;
+  }
+}
+
+async function loadUserTotal() {
+  if (!canReadUsers.value) return;
+  usersLoading.value = true;
+  try {
+    const res = await listUsersApi({ page_size: 1 });
+    userTotal.value = res?.data?.total ?? 0;
+  } catch (error) {
+    message(getErrorMessage(error), { type: "error" });
+  } finally {
+    usersLoading.value = false;
+  }
+}
+
+async function loadContactNewTotal() {
+  if (!canReadContact.value) return;
+  contactLoading.value = true;
+  try {
+    const res = await listContactSubmissionsApi({
+      status: "new",
+      page_size: 1
+    });
+    contactNewTotal.value = res?.data?.total ?? 0;
+  } catch (error) {
+    message(getErrorMessage(error), { type: "error" });
+  } finally {
+    contactLoading.value = false;
+  }
+}
+
+watch(rangeIndex, () => {
+  loadOverview();
+});
+
+onMounted(() => {
+  loadOverview();
+  loadUserTotal();
+  loadContactNewTotal();
+});
 </script>
 
 <template>
-  <div>
-    <el-row :gutter="24" justify="space-around">
+  <div class="flex flex-col gap-4">
+    <el-row :gutter="24">
       <re-col
-        v-for="(item, index) in chartData"
-        :key="index"
-        v-motion
-        class="mb-4.5"
+        v-if="canReadAnalytics"
         :value="6"
-        :md="12"
         :sm="12"
         :xs="24"
-        :initial="{
-          opacity: 0,
-          y: 100
-        }"
-        :enter="{
-          opacity: 1,
-          y: 0,
-          transition: {
-            delay: 80 * (index + 1)
-          }
-        }"
-      >
-        <el-card class="line-card" shadow="never">
-          <div class="flex justify-between">
-            <span class="text-md font-medium">
-              {{ item.name }}
-            </span>
-            <div
-              class="size-8 flex-c rounded-md"
-              :style="{
-                backgroundColor: isDark ? 'transparent' : item.bgColor
-              }"
-            >
-              <IconifyIconOffline
-                :icon="item.icon"
-                :color="item.color"
-                width="18"
-                height="18"
-              />
-            </div>
-          </div>
-          <div class="flex justify-between items-start mt-3">
-            <div class="w-1/2">
-              <ReNormalCountTo
-                :duration="item.duration"
-                :fontSize="'1.6em'"
-                :startVal="100"
-                :endVal="item.value"
-              />
-              <p class="font-medium text-green-500">{{ item.percent }}</p>
-            </div>
-            <ChartLine
-              v-if="item.data.length > 1"
-              class="w-1/2!"
-              :color="item.color"
-              :data="item.data"
-            />
-            <ChartRound v-else class="w-1/2!" />
-          </div>
-        </el-card>
-      </re-col>
-
-      <re-col
-        v-motion
         class="mb-4.5"
-        :value="18"
-        :xs="24"
-        :initial="{
-          opacity: 0,
-          y: 100
-        }"
-        :enter="{
-          opacity: 1,
-          y: 0,
-          transition: {
-            delay: 400
-          }
-        }"
       >
-        <el-card class="bar-card" shadow="never">
-          <div class="flex justify-between">
-            <span class="text-md font-medium">分析概览</span>
-            <Segmented v-model="curWeek" :options="optionsBasis" />
-          </div>
-          <div class="flex justify-between items-start mt-3">
-            <ChartBar
-              :requireData="barChartData[curWeek].requireData"
-              :questionData="barChartData[curWeek].questionData"
-            />
-          </div>
-        </el-card>
+        <div v-loading="analyticsLoading" class="panel-container metric-card">
+          <span class="metric-label">访问人数</span>
+          <span class="metric-value">{{ overview?.pv ?? 0 }}</span>
+        </div>
       </re-col>
-
       <re-col
-        v-motion
-        class="mb-4.5"
+        v-if="canReadAnalytics"
         :value="6"
+        :sm="12"
         :xs="24"
-        :initial="{
-          opacity: 0,
-          y: 100
-        }"
-        :enter="{
-          opacity: 1,
-          y: 0,
-          transition: {
-            delay: 480
-          }
-        }"
-      >
-        <el-card shadow="never">
-          <div class="flex justify-between">
-            <span class="text-md font-medium">解决概率</span>
-          </div>
-          <div
-            v-for="(item, index) in progressData"
-            :key="index"
-            :class="[
-              'flex',
-              'justify-between',
-              'items-start',
-              index === 0 ? 'mt-8' : 'mt-[2.15rem]'
-            ]"
-          >
-            <el-progress
-              :text-inside="true"
-              :percentage="item.percentage"
-              :stroke-width="21"
-              :color="item.color"
-              striped
-              striped-flow
-              :duration="item.duration"
-            />
-            <span class="text-nowrap ml-2 text-text_color_regular text-sm">
-              {{ item.week }}
-            </span>
-          </div>
-        </el-card>
-      </re-col>
-
-      <re-col
-        v-motion
         class="mb-4.5"
-        :value="18"
-        :xs="24"
-        :initial="{
-          opacity: 0,
-          y: 100
-        }"
-        :enter="{
-          opacity: 1,
-          y: 0,
-          transition: {
-            delay: 560
-          }
-        }"
       >
-        <el-card shadow="never">
-          <div class="flex justify-between">
-            <span class="text-md font-medium">数据统计</span>
-          </div>
-          <el-scrollbar max-height="504" class="mt-3">
-            <WelcomeTable />
-          </el-scrollbar>
-        </el-card>
+        <div v-loading="analyticsLoading" class="panel-container metric-card">
+          <span class="metric-label">访问来源</span>
+          <span class="metric-value">{{ overview?.source_count ?? 0 }}</span>
+        </div>
       </re-col>
-
-      <re-col
-        v-motion
-        class="mb-4.5"
-        :value="6"
-        :xs="24"
-        :initial="{
-          opacity: 0,
-          y: 100
-        }"
-        :enter="{
-          opacity: 1,
-          y: 0,
-          transition: {
-            delay: 640
-          }
-        }"
-      >
-        <el-card shadow="never">
-          <div class="flex justify-between">
-            <span class="text-md font-medium">最新动态</span>
-          </div>
-          <el-scrollbar max-height="504" class="mt-3">
-            <el-timeline>
-              <el-timeline-item
-                v-for="(item, index) in latestNewsData"
-                :key="index"
-                center
-                placement="top"
-                :icon="
-                  markRaw(
-                    useRenderFlicker({
-                      background: randomGradient({
-                        randomizeHue: true
-                      })
-                    })
-                  )
-                "
-                :timestamp="item.date"
-              >
-                <p class="text-text_color_regular text-sm">
-                  {{
-                    `新增 ${item.requiredNumber} 条问题，${item.resolveNumber} 条已解决`
-                  }}
-                </p>
-              </el-timeline-item>
-            </el-timeline>
-          </el-scrollbar>
-        </el-card>
+      <re-col v-if="canReadUsers" :value="6" :sm="12" :xs="24" class="mb-4.5">
+        <div v-loading="usersLoading" class="panel-container metric-card">
+          <span class="metric-label">注册人数</span>
+          <span class="metric-value">{{ userTotal }}</span>
+        </div>
+      </re-col>
+      <re-col v-if="canReadContact" :value="6" :sm="12" :xs="24" class="mb-4.5">
+        <div v-loading="contactLoading" class="panel-container metric-card">
+          <span class="metric-label">未读留言</span>
+          <span class="metric-value">{{ contactNewTotal }}</span>
+        </div>
       </re-col>
     </el-row>
+
+    <div v-if="canReadAnalytics" class="panel-container">
+      <div class="panel-header">
+        <span class="panel-title">访问来源</span>
+        <Segmented v-model="rangeIndex" :options="rangeOptions" />
+      </div>
+      <div class="panel-body">
+        <AnalyticsSources
+          :sources="overview?.sources ?? []"
+          :loading="analyticsLoading"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
-<style lang="scss" scoped>
-:deep(.el-card) {
-  --el-card-border-color: none;
+<style scoped>
+@import url("@/style/business.scss");
 
-  /* 解决概率进度条宽度 */
-  .el-progress--line {
-    width: 85%;
-  }
-
-  /* 解决概率进度条字体大小 */
-  .el-progress-bar__innerText {
-    font-size: 15px;
-  }
-
-  /* 隐藏 el-scrollbar 滚动条 */
-  .el-scrollbar__bar {
-    display: none;
-  }
-
-  /* el-timeline 每一项上下、左右边距 */
-  .el-timeline-item {
-    margin: 0 6px;
-  }
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
 }
 
-:deep(.el-timeline.is-start) {
-  padding-left: 0;
+.metric-label {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
 }
 
-.main-content {
-  margin: 20px 20px 0 !important;
+.metric-value {
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--el-text-color-primary);
 }
 </style>

@@ -25,6 +25,13 @@
 | FIX-FE-I18N | 前端：内部跳转本地化 + Pinia 持久化语言/主题 | `fix-fe-i18n-links` | `master-relay` | — | done | 已合入 53fd452 |
 | ADMIN-UX-01 | 管理后台：多语言弹窗布局 / Vditor 编辑器 / 站点设置合并 | `admin-content-ux` | `master-relay` | — | done | 已合入 b3d9488 |
 | ADMIN-UX-02 | 管理后台：媒体选择器宽度 / Markdown 编辑器固定高度 | `fix-admin-media-md` | `master-relay` | — | done | 已合入 88732cd |
+| BE-ANALYTICS | 访问统计（PV + 访问来源上报与聚合） | `be-analytics` | `master-relay` | — | done | 已合入 d3ce8e2 |
+| FE-ANALYTICS | 官网访问上报埋点 | `fe-analytics` | `master-relay` | BE-ANALYTICS | done | 已合入 d90d10b |
+| ADMIN-DASHBOARD | 工作台改造（4 卡片 + 访问来源列表） | `admin-dashboard` | `master-relay` | BE-ANALYTICS | done | 已合入 dee7bda |
+| NEXT-01 | next/ 基座（Next.js + shadcn/ui：i18n/主题/代理/布局） | `next-foundation` | `master-relay` | — | done | 已合入 0308a37 |
+| NEXT-02 | next/ 公开页面 + sitemap + 访问上报 | `next-pages` | `master-relay` | NEXT-01 | done | 已合入 7732508 |
+| NEXT-03 | next/ 认证与用户中心 | `next-auth` | `master-relay` | NEXT-01、BE-03 | done | 已合入 2e108da |
+| FIX-NEXT-DEV-ORIGIN | next/ dev 允许 127.0.0.1（allowedDevOrigins） | `fix-next-dev-origin` | `master-relay` | — | done | 已合入 7616604 |
 
 ## 更新规则
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rio9466/easy-admin/server/internal/domain/adminauth"
+	"github.com/rio9466/easy-admin/server/internal/domain/analytics"
 	"github.com/rio9466/easy-admin/server/internal/domain/contact"
 	"github.com/rio9466/easy-admin/server/internal/domain/content"
 	"github.com/rio9466/easy-admin/server/internal/transport/http/handler"
@@ -19,6 +20,7 @@ type Dependencies struct {
 	UserClient     handler.UserClientService
 	UserAdmin      handler.UserAdminService
 	Content        handler.ContentService
+	Analytics      handler.AnalyticsService
 	Tokens         middleware.TokenParser
 	Sessions       middleware.SessionGetter
 	UserTokens     middleware.TokenParser
@@ -59,6 +61,12 @@ func NewRouter(deps Dependencies) *gin.Engine {
 		r.GET("/api/v1/public/docs/:slug", contentPublic.Doc)
 		r.POST("/api/v1/public/contact", contentPublic.Contact)
 		r.GET("/media/:filename", contentPublic.MediaFile)
+	}
+
+	// --- public page-view ingest (no authentication) -----------------------
+	if deps.Analytics != nil {
+		analyticsPublic := handler.NewAnalyticsPublicHandlers(deps.Analytics)
+		r.POST("/api/v1/public/page-view", analyticsPublic.PageView)
 	}
 
 	if deps.AdminAuth == nil && deps.UserClient == nil && deps.UserAdmin == nil {
@@ -191,6 +199,17 @@ func NewRouter(deps Dependencies) *gin.Engine {
 				settings.GET("", middleware.RequirePermission(adminauth.PermSystemSettingsRead), systemSettingsHandlers.Get)
 				settings.PUT("", middleware.RequirePermission(adminauth.PermSystemSettingsManage), systemSettingsHandlers.Update)
 			}
+		}
+	}
+
+	// --- administrator analytics ------------------------------------------
+	if deps.Analytics != nil {
+		analyticsHandlers := handler.NewAnalyticsAdminHandlers(deps.Analytics)
+
+		analyticsRoutes := v1.Group("/analytics")
+		analyticsRoutes.Use(authenticate)
+		{
+			analyticsRoutes.GET("/overview", middleware.RequirePermission(analytics.PermissionRead), analyticsHandlers.Overview)
 		}
 	}
 
