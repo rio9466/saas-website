@@ -6,6 +6,7 @@ import { routing } from "@/i18n/routing";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/lib/auth";
 import { getSiteSettings } from "@/lib/site-settings";
 import { buildMetadata } from "@/lib/seo";
 import "../globals.css";
@@ -55,9 +56,11 @@ export default async function LocaleLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <SiteHeader settings={settings} />
-            <main className="flex-1">{children}</main>
-            <SiteFooter settings={settings} />
+            <AuthProvider>
+              <SiteHeader settings={settings} />
+              <main className="flex-1">{children}</main>
+              <SiteFooter settings={settings} />
+            </AuthProvider>
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>
