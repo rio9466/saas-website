@@ -18,7 +18,8 @@
     "console": "控制台",
     "openMenu": "打开菜单",
     "closeMenu": "关闭菜单",
-    "toggleTheme": "切换主题"
+    "toggleTheme": "切换主题",
+    "logout": "退出登录"
   },
   "footer": {
     "navigation": "导航",
@@ -96,7 +97,6 @@
     }
   },
   "errorCodes": {
-    "unknown": "出错了，请稍后再试。",
     "10001": "请检查您填写的信息。",
     "20001": "登录已过期，请重新登录。",
     "20002": "会话已失效，请重新登录。",
@@ -114,6 +114,177 @@
     "42901": "请求过于频繁，请稍后再试。",
     "50001": "服务暂时不可用，请稍后再试。",
     "50002": "服务暂时不可用，请稍后再试。",
-    "50003": "邮件发送失败，请稍后再试。"
+    "50003": "邮件发送失败，请稍后再试。",
+    "unknown": "出错了，请稍后再试。"
+  },
+  "auth": {
+    "register": {
+      "title": "创建账号",
+      "subtitle": "注册后可管理套餐、用量与安全设置。",
+      "submit": "创建账号",
+      "closedTitle": "注册暂未开放",
+      "closedDescription": "当前暂未开放注册，请稍后再试。",
+      "pendingTitle": "请查收邮件",
+      "pendingDescription": "我们已向 {email} 发送验证链接，打开链接即可激活账号。",
+      "resend": "重新发送验证邮件",
+      "resent": "验证邮件已发送",
+      "backToLogin": "返回登录",
+      "haveAccount": "已有账号？",
+      "login": "登录",
+      "fields": {
+        "username": "用户名",
+        "email": "邮箱",
+        "password": "密码",
+        "confirmPassword": "确认密码",
+        "passwordHint": "8–72 个字符"
+      },
+      "errors": {
+        "usernameRequired": "请填写用户名。",
+        "usernameLength": "用户名长度需为 3–64 个字符。",
+        "emailRequired": "请填写邮箱。",
+        "emailInvalid": "请输入有效的邮箱地址。",
+        "passwordRequired": "请填写密码。",
+        "passwordLength": "密码长度需为 8–72 个字符。",
+        "confirmRequired": "请再次输入密码。",
+        "confirmMismatch": "两次输入的密码不一致。",
+        "validation": "请检查你填写的信息。"
+      }
+    },
+    "verifyEmail": {
+      "title": "验证邮箱",
+      "successTitle": "邮箱验证成功",
+      "successDescription": "你的邮箱已验证，现在可以登录了。",
+      "invalidTitle": "验证失败",
+      "invalidDescription": "该验证链接无效或已过期。",
+      "missing": "该验证链接缺少邮箱或令牌参数。",
+      "resend": "重新发送验证邮件",
+      "resent": "验证邮件已发送",
+      "goToLogin": "前往登录"
+    },
+    "login": {
+      "title": "登录",
+      "subtitle": "欢迎回来，请登录你的账号。",
+      "submit": "登录",
+      "registered": "账号已创建，请登录。",
+      "passwordReset": "密码已重置，请登录。",
+      "passwordChanged": "密码已修改，请重新登录。",
+      "forgot": "忘记密码？",
+      "noAccount": "还没有账号？",
+      "signUp": "注册",
+      "unverifiedTitle": "邮箱未验证",
+      "unverifiedDescription": "请先完成邮箱验证再登录。你可以在下方重新发送验证邮件。",
+      "resend": "重新发送验证邮件",
+      "resent": "验证邮件已发送",
+      "hintBoth": "可使用用户名或邮箱登录",
+      "hintEmail": "使用邮箱登录",
+      "hintUsername": "使用用户名登录",
+      "fields": {
+        "identifier": "用户名或邮箱",
+        "email": "邮箱",
+        "password": "密码"
+      },
+      "errors": {
+        "identifierRequired": "请填写用户名或邮箱。",
+        "passwordRequired": "请填写密码。",
+        "validation": "请检查你填写的信息。"
+      }
+    },
+    "forgot": {
+      "title": "忘记密码",
+      "subtitle": "输入邮箱，我们将发送重置链接。",
+      "email": "邮箱",
+      "submit": "发送重置链接",
+      "sentTitle": "请查收邮件",
+      "sentDescription": "若该邮箱已注册，我们已发送密码重置链接。",
+      "backToLogin": "返回登录",
+      "errors": {
+        "emailRequired": "请填写邮箱。",
+        "emailInvalid": "请输入有效的邮箱地址。"
+      }
+    },
+    "reset": {
+      "title": "重置密码",
+      "subtitle": "为你的账号设置新密码。",
+      "submit": "重置密码",
+      "invalidTitle": "链接无效或已过期",
+      "invalidDescription": "该重置链接无效或已过期，请重新申请。",
+      "requestNew": "重新申请链接",
+      "fields": {
+        "password": "新密码",
+        "confirmPassword": "确认新密码",
+        "passwordHint": "8–72 个字符"
+      },
+      "errors": {
+        "passwordRequired": "请填写新密码。",
+        "passwordLength": "密码长度需为 8–72 个字符。",
+        "confirmRequired": "请再次输入新密码。",
+        "confirmMismatch": "两次输入的密码不一致。"
+      }
+    }
+  },
+  "account": {
+    "signedInAs": "当前登录",
+    "logout": "退出登录",
+    "nav": {
+      "overview": "概览",
+      "points": "积分",
+      "security": "安全",
+      "profile": "资料"
+    },
+    "overview": {
+      "title": "账号概览",
+      "subtitle": "查看你的资料、等级与积分。",
+      "username": "用户名",
+      "email": "邮箱",
+      "level": "等级",
+      "joinedAt": "注册时间",
+      "pointsBalance": "积分余额",
+      "consumption": "累计消耗",
+      "unverified": "未验证",
+      "noLevel": "—"
+    },
+    "points": {
+      "title": "积分",
+      "subtitle": "你的余额与积分流水。",
+      "balance": "余额",
+      "consumption": "累计消耗",
+      "level": "等级",
+      "empty": "暂无积分流水。",
+      "pageInfo": "第 {page} / {total} 页",
+      "previous": "上一页",
+      "next": "下一页",
+      "table": {
+        "time": "时间",
+        "reason": "事由",
+        "change": "变动",
+        "balance": "余额",
+        "consumptionChange": "消耗"
+      }
+    },
+    "security": {
+      "title": "安全设置",
+      "subtitle": "修改密码后，所有会话将退出登录。",
+      "currentPassword": "当前密码",
+      "newPassword": "新密码",
+      "confirmPassword": "确认新密码",
+      "passwordHint": "8–72 个字符",
+      "submit": "修改密码",
+      "errors": {
+        "currentRequired": "请填写当前密码。",
+        "newRequired": "请填写新密码。",
+        "newLength": "密码长度需为 8–72 个字符。",
+        "confirmRequired": "请再次输入新密码。",
+        "confirmMismatch": "两次输入的密码不一致。"
+      }
+    },
+    "profile": {
+      "title": "资料",
+      "subtitle": "更新昵称与头像。",
+      "nickname": "昵称",
+      "nicknameHint": "将展示在站点各处。",
+      "avatarUrl": "头像 URL",
+      "submit": "保存修改",
+      "saved": "资料已更新。"
+    }
   }
 }

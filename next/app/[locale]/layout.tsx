@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { PageViewReporter } from "@/components/page-view-reporter";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/lib/auth";
 import { getSiteSettings } from "@/lib/site-settings";
 import { buildMetadata } from "@/lib/seo";
 import "../globals.css";
@@ -56,10 +57,12 @@ export default async function LocaleLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <SiteHeader settings={settings} />
-            <main className="flex-1">{children}</main>
-            <SiteFooter settings={settings} />
-            <PageViewReporter />
+            <AuthProvider>
+              <SiteHeader settings={settings} />
+              <main className="flex-1">{children}</main>
+              <SiteFooter settings={settings} />
+              <PageViewReporter />
+            </AuthProvider>
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

@@ -13,6 +13,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { AuthNav } from "@/components/auth-nav";
 import { SiteLogo } from "@/components/site-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { SiteSettings } from "@/lib/site-settings";
@@ -61,18 +62,7 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
           <LocaleSwitcher locales={settings.locales} />
           <ThemeToggle />
 
-          <Link
-            href="/login"
-            className={buttonVariants({ variant: "ghost", size: "sm" })}
-          >
-            {t("header.login")}
-          </Link>
-          <Link
-            href="/register"
-            className={buttonVariants({ size: "sm" })}
-          >
-            {t("header.register")}
-          </Link>
+          <AuthNav />
 
           <Sheet>
             <SheetTrigger
