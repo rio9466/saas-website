@@ -31,7 +31,7 @@
 | NEXT-01 | next/ 基座（Next.js + shadcn/ui：i18n/主题/代理/布局） | `next-foundation` | `master-relay` | — | done | 已合入 0308a37 |
 | NEXT-02 | next/ 公开页面 + sitemap + 访问上报 | `next-pages` | `master-relay` | NEXT-01 | done | 已合入 7732508 |
 | NEXT-03 | next/ 认证与用户中心 | `next-auth` | `master-relay` | NEXT-01、BE-03 | done | 已合入 2e108da |
-| FIX-NEXT-DEV-ORIGIN | next/ dev 允许 127.0.0.1（allowedDevOrigins） | `fix-next-dev-origin` | `master-relay` | — | todo | worktree 已建，待认领 |
+| FIX-NEXT-DEV-ORIGIN | next/ dev 允许 127.0.0.1（allowedDevOrigins） | `fix-next-dev-origin` | `master-relay` | — | done | 已合入 7616604 |
 
 ## 更新规则
 
