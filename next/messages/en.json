@@ -1,0 +1,66 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Retry"
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "pricing": "Pricing",
+    "docs": "Docs",
+    "contact": "Contact"
+  },
+  "header": {
+    "login": "Log in",
+    "register": "Sign up",
+    "console": "Console",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "toggleTheme": "Toggle theme"
+  },
+  "footer": {
+    "navigation": "Navigation",
+    "contact": "Contact",
+    "followUs": "Follow us",
+    "rights": "All rights reserved.",
+    "icp": "ICP Record"
+  },
+  "locale": {
+    "switchLabel": "Language",
+    "names": {
+      "en": "English",
+      "zh-CN": "简体中文"
+    }
+  },
+  "site": {
+    "fallbackName": "Acme Cloud",
+    "fallbackTagline": "Multilingual software website"
+  },
+  "home": {
+    "placeholder": "Foundation is ready. Public pages arrive in NEXT-02.",
+    "primaryCta": "Get started",
+    "secondaryCta": "Contact us"
+  },
+  "errorCodes": {
+    "unknown": "Something went wrong. Please try again.",
+    "10001": "Please check the information you entered.",
+    "20001": "Your session has expired. Please log in again.",
+    "20002": "Your session is no longer valid. Please log in again.",
+    "20003": "Your session has expired. Please log in again.",
+    "30001": "You do not have permission to perform this action.",
+    "40001": "This resource already exists or conflicts with an existing one.",
+    "40002": "The requested resource was not found.",
+    "40005": "The current password is incorrect.",
+    "40006": "This account has been disabled.",
+    "40010": "Registration is currently closed.",
+    "40011": "Please verify your email address first.",
+    "40012": "This login method is disabled.",
+    "40013": "The settings were changed elsewhere. Please reload and try again.",
+    "40016": "This verification link is invalid or has expired.",
+    "42901": "Too many requests. Please try again later.",
+    "50001": "The service is temporarily unavailable. Please try again later.",
+    "50002": "The service is temporarily unavailable. Please try again later.",
+    "50003": "We could not send the email. Please try again later."
+  }
+}
