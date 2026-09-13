@@ -78,7 +78,17 @@
 
 ## 6. 对话 pi 的持久记忆
 
-在仓库根放一个**本地、git-ignored** 的 `CONVERSATION_MEMORY.md`，记录：
+**优先写入 Obsidian**（如果用户机器上装了）：
+
+1. 检测 Obsidian：macOS 下 `/Applications/Obsidian.app` 和/或
+   `~/Library/Application Support/obsidian/obsidian.json`（列出 vault，`open:true` 为当前 vault）。
+2. 在当前 vault 里找「偏好」笔记（如 `偏好.md`）：不存在就**新建**；存在就**合并到对应小节**
+   （不要覆盖其它小节）。
+3. 之后所有记忆写入都放这个笔记（它是主存储）。
+
+**回退**：没装 Obsidian 时，用仓库根目录的本地、git-ignored `CONVERSATION_MEMORY.md`。
+
+记录内容：
 
 - 用户偏好与习惯（语言、简洁度、是否先给方案、合并是否需授权、命名/端口约定、派发偏好）；
 - 项目事实（分支模型、发布基线、端口、数据库、外部依赖）；
