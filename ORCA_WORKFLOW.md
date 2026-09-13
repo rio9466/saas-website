@@ -124,9 +124,10 @@ Detection and storage:
 1. Detect Obsidian — macOS: `/Applications/Obsidian.app` and/or
    `~/Library/Application Support/obsidian/obsidian.json` (lists vaults; the entry with
    `open: true` is the user's active vault).
-2. In the active vault, find the preferences note (e.g. `偏好.md`, or a note named like
-   preferences / user preferences). If it does not exist, **create it**; if it exists,
-   **merge** into the matching section — never overwrite other sections.
+2. In the active vault, find `CONVERSATION_MEMORY.md` — **create it if missing; merge into the
+   matching section if present** (never overwrite other sections). Organize it with Obsidian
+   `[[wikilinks]]` so it connects in the **graph view**: a hub note linking section notes such
+   as `[[用户偏好]]`, `[[项目事实]]`, `[[约定与坑]]`, `[[轻量决策]]`, each linking back to the hub.
 3. All future memory writes go to that note. It is the source of truth.
 
 Fallback (no Obsidian): keep the git-ignored `CONVERSATION_MEMORY.md` at the repo root (listed

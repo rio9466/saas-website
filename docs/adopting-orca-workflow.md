@@ -82,8 +82,9 @@
 
 1. 检测 Obsidian：macOS 下 `/Applications/Obsidian.app` 和/或
    `~/Library/Application Support/obsidian/obsidian.json`（列出 vault，`open:true` 为当前 vault）。
-2. 在当前 vault 里找「偏好」笔记（如 `偏好.md`）：不存在就**新建**；存在就**合并到对应小节**
-   （不要覆盖其它小节）。
+2. 在当前 vault 里找 `CONVERSATION_MEMORY.md`：不存在就**新建**；存在就**合并到对应小节**（不要覆盖其它小节）。
+   用 Obsidian **双链 `[[...]]`** 组织成「枢纽 + 子笔记」（如 [[用户偏好]]、[[项目事实]]、[[约定与坑]]、[[轻量决策]]，
+   子笔记回链枢纽），这样在**关系图谱**里有连接、可跳转。
 3. 之后所有记忆写入都放这个笔记（它是主存储）。
 
 **回退**：没装 Obsidian 时，用仓库根目录的本地、git-ignored `CONVERSATION_MEMORY.md`。
