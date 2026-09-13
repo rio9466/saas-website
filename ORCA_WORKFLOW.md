@@ -115,16 +115,22 @@ orca terminal send --terminal <handle> --text "<task brief>" --enter --json
 
 #### Persistent memory and user preferences
 
-The conversation pi keeps durable memory across sessions in a single, **local, git-ignored**
-file at the repo root:
+The conversation pi keeps durable memory across sessions. **If Obsidian is installed on the
+user's machine, the memory lives in an Obsidian note; otherwise it falls back to a local,
+git-ignored file.**
 
-```
-CONVERSATION_MEMORY.md
-```
+Detection and storage:
 
-- It is listed in the root `.gitignore` and **must never be committed**.
-- Because it is untracked, it lives in whichever checkout the conversation pi runs in (the
-  `master` main checkout) and is not shared through git.
+1. Detect Obsidian — macOS: `/Applications/Obsidian.app` and/or
+   `~/Library/Application Support/obsidian/obsidian.json` (lists vaults; the entry with
+   `open: true` is the user's active vault).
+2. In the active vault, find the preferences note (e.g. `偏好.md`, or a note named like
+   preferences / user preferences). If it does not exist, **create it**; if it exists,
+   **merge** into the matching section — never overwrite other sections.
+3. All future memory writes go to that note. It is the source of truth.
+
+Fallback (no Obsidian): keep the git-ignored `CONVERSATION_MEMORY.md` at the repo root (listed
+in `.gitignore`, never committed).
 
 What to keep there:
 
@@ -146,8 +152,8 @@ When to read and write it:
 
 Boundaries:
 
-- `CONVERSATION_MEMORY.md` is the conversation pi's own memory; executors do not read or write
-  it.
+- The memory (the Obsidian note, or the fallback file) is the conversation pi's own; executors
+  do not read or write it.
 - It is not a product document: the PRD holds product requirements, `docs/tasks/STATUS.md`
   holds the task ledger, and this memory holds the assistant's durable context and the user
   profile.
